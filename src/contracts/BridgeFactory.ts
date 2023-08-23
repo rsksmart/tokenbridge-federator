@@ -1,5 +1,5 @@
-import abiBridgeV3 from '../../../bridge/abi/BridgeV3.json';
-import abiBridgeV4 from '../../../bridge/abi/Bridge.json';
+import abiBridgeV3 from '../abi/BridgeV3.json';
+import abiBridgeV4 from '../abi/Bridge.json';
 import { IBridgeV3 } from './IBridgeV3';
 import { IBridgeV4 } from './IBridgeV4';
 import * as typescriptUtils from '../lib/typescriptUtils';
