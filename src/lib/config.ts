@@ -15,6 +15,7 @@ export interface JsonConfigParams {
   federatorRetries?: number;
   checkHttps?: boolean;
   explorer?: string;
+  name: string;
 }
 
 export class ConfigData {
@@ -29,6 +30,7 @@ export class ConfigData {
   federatorRetries: number;
   checkHttps: boolean;
   explorer?: string;
+  name: string;
 }
 
 export class Config extends ConfigData {
@@ -47,6 +49,7 @@ export class Config extends ConfigData {
     this.endpointsPort = jsonConfig.endpointsPort ?? DEFAULT_ENDPOINT_PORT;
     this.federatorRetries = jsonConfig.federatorRetries ?? DEFAULT_RETRIE_TIMES;
     this.checkHttps = jsonConfig.checkHttps ?? true;
+    this.name = jsonConfig.name;
   }
 
   private getConfigs(): ConfigChain[] {

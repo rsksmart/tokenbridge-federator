@@ -92,9 +92,9 @@ async function emitAndListenToHeartbeats(heartbeats) {
     });
 
     if (logFileContent.indexOf("HeartBeat") > -1) {
-      logWrapper.info("HeartBeat Event detected on Log File");
+      logWrapper.info("HeartBeat Event detected on Log.ts File");
     } else {
-      logWrapper.error("HeartBeat Event NOT detected on Log File");
+      logWrapper.error("HeartBeat Event NOT detected on Log.ts File");
       process.exit(1);
     }
   } catch (err) {
