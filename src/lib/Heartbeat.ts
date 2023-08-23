@@ -10,6 +10,8 @@ import { IFederation } from '../contracts/IFederation';
 import { LogWrapper } from './logWrapper';
 import { MetricCollector } from './MetricCollector';
 import * as typescriptUtils from './typescriptUtils';
+import {AppDataSource} from "../services/AppDataSource";
+import {FederatorEntity} from "../entities/Federator.entity";
 
 const currentVersion = process.env.npm_package_version;
 
@@ -80,27 +82,21 @@ export class Heartbeat {
     return false;
   }
 
-  checkStoragePath() {
-    if (!fs.existsSync(this.config.storagePath)) {
-      fs.mkdirSync(this.config.storagePath, {
-        recursive: true,
-      });
-    }
-  }
-
-  getFromBlock(): number {
+  async getFromBlock(): Promise<number> {
     const originalFromBlock = this.config.mainchain.fromBlock;
     let fromBlock = null;
+    let federator: FederatorEntity | null = null;
     try {
-      fromBlock = fs.readFileSync(this.lastBlockPath, 'utf8');
+      const fedRepository = AppDataSource.getRepository(FederatorEntity);
+      federator = await fedRepository.findOne({ where: { name: this.config.name }});
     } catch (err) {
       fromBlock = originalFromBlock;
     }
 
-    if (fromBlock < originalFromBlock) {
+    if (federator.heartBeatLastBlock < originalFromBlock) {
       return originalFromBlock;
     }
-    return parseInt(fromBlock);
+    return federator.heartBeatLastBlock;
   }
 
   async handleReadLogsPage(
@@ -130,7 +126,7 @@ export class Heartbeat {
 
       this.logger.info(`Found ${heartbeatLogs.length} heartbeatLogs`);
 
-      this._saveProgress(this.lastBlockPath, toPagedBlock);
+      await this._saveProgress(this.config.name, toPagedBlock);
       fromPageBlock = toPagedBlock + 1;
     }
   }
@@ -151,8 +147,7 @@ export class Heartbeat {
           return false;
         }
 
-        this.checkStoragePath();
-        let fromBlock = this.getFromBlock();
+        let fromBlock = await this.getFromBlock();
 
         if (fromBlock >= toBlock) {
           this.logger.warn(
@@ -280,9 +275,10 @@ export class Heartbeat {
     }
   }
 
-  _saveProgress(path, value) {
+  async _saveProgress(name: string, value: number) {
     if (value) {
-      fs.writeFileSync(path, value.toString());
+      await AppDataSource.createQueryBuilder().update(FederatorEntity)
+          .set({ heartBeatLastBlock: value }).where("name = :name", { name }).execute();
     }
   }
 

@@ -15,6 +15,9 @@ import {
   LOGGER_CATEGORY_HEARTBEAT,
   LOGGER_CATEGORY_ENDPOINT,
 } from './lib/logs';
+import {AppDataSource} from "./services/AppDataSource";
+import {FederatorEntity} from "./entities/Federator.entity";
+import {config} from "dotenv";
 
 export class Main {
   logger: LogWrapper;
@@ -51,6 +54,20 @@ export class Main {
   }
 
   async start() {
+    await AppDataSource.initialize();
+
+    const entityManager = AppDataSource.getRepository(FederatorEntity);
+    const lines = await entityManager.count();
+
+    if (lines === 0) {
+      this.logger.info(`Initializing main table`);
+      const fedEntity = new FederatorEntity();
+      fedEntity.name = this.config.name;
+      fedEntity.heartBeatLastBlock = this.config.mainchain.fromBlock;
+
+      await entityManager.insert(fedEntity);
+    }
+
     this.scheduleFederatorProcesses();
     // TODO uncoment this after tests
     this.scheduleHeartbeatProcesses();
