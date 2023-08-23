@@ -30,7 +30,7 @@ describe('Federator module tests', () => {
     it('Saves the progress in a file path', async () => {
         let federator = new Federator.default(testConfig, logger, web3Mock);
 
-        federator._saveProgress(testPath, 'test');
+        await federator._saveProgress(31, 111543, 'test');
 
         expect(fs.existsSync(testPath)).toBeTruthy();
 

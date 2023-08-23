@@ -11,6 +11,8 @@ import * as typescriptUtils from './typescriptUtils';
 import { ConfigChain } from './configChain';
 import { IFederation } from '../contracts/IFederation';
 import { LogWrapper } from './logWrapper';
+import {AppDataSource} from "../services/AppDataSource";
+import {Log} from "../entities/Log";
 
 export default abstract class Federator {
   public logger: LogWrapper;
@@ -175,9 +177,16 @@ export default abstract class Federator {
     }
   }
 
-  _saveProgress(path, value) {
+  async _saveProgress(mainChain: number, sideChain: number, value: number) {
     if (value) {
-      fs.writeFileSync(path, value.toString());
+      const log = await AppDataSource.getRepository(Log)
+          .findOne({ where: { mainChain, sideChain }});
+
+      if (log) {
+        await AppDataSource.getRepository(Log).update({id: log.id}, { block: value });
+      } else {
+        await AppDataSource.getRepository(Log).insert({ mainChain, sideChain, block: value })
+      }
     }
   }
 }
