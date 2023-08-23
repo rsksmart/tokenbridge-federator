@@ -1,5 +1,5 @@
 import abiAllowTokensV0 from '../abi/AllowTokensV0.json';
-import abiAllowTokensV1 from '..//abi/AllowTokens.json';
+import abiAllowTokensV1 from '../abi/AllowTokens.json';
 import { IAllowTokensV1 } from './IAllowTokensV1';
 import { IAllowTokensV0 } from './IAllowTokensV0';
 import * as typescriptUtils from '../lib/typescriptUtils';
