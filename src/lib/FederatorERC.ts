@@ -125,7 +125,6 @@ export default class FederatorERC extends Federator {
   }
 
   async getLogsAndProcess(getLogParams: GetLogsParams) {
-    console.log(`Log params`);
     this.logger.trace(
       `getLogsAndProcess started currentBlock: ${getLogParams.currentBlock}, fromBlock: ${getLogParams.fromBlock}, toBlock: ${getLogParams.toBlock}`,
     );
