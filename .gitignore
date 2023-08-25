@@ -4,3 +4,5 @@ node_modules
 .env
 db
 *.log
+config/config.js
+db/federatorDB.sqlite
