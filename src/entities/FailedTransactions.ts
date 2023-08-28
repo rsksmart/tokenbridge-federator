@@ -9,7 +9,7 @@ export class FailedTransactions {
     @Column()
     sideChain: number;
     @Column()
-    hash: string;
+    transactionId: string;
     @Column()
     txData: string
 }
