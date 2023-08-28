@@ -5,7 +5,7 @@ dotenv.config();
 module.exports = {
   mainchain: require("./rsktestnet.json"), //the json containing the smart contract addresses in rsk
   sidechain: [
-    require("./kovan.json"), //the json containing the smart contract addresses in eth
+    require("./sepolia.json"), //the json containing the smart contract addresses in eth
   ],
   runEvery: 2, // In minutes,
   privateKey: process.env.FEDERATOR_KEY || '',
@@ -15,4 +15,5 @@ module.exports = {
   endpointsPort: 5000, // Server port
   federatorRetries: 0, // 0 means infinite retries
   checkHttps: false,
+  name: 'federator'
 };
