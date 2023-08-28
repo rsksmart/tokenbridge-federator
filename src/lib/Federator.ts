@@ -76,11 +76,13 @@ export default abstract class Federator {
     return this.getWeb3(this.config.mainchain.host);
   }
 
-  getLastBlock(mainChainId: number, sideChainId: number): number {
+  async getLastBlock(mainChainId: number, sideChainId: number): Promise<number> {
     let fromBlock: number = null;
     const originalFromBlock = this.config.mainchain.fromBlock || 0;
     try {
-      fromBlock = parseInt(fs.readFileSync(this.getLastBlockPath(mainChainId, sideChainId), 'utf8'));
+      const log = await AppDataSource.getRepository(Log)
+          .findOne({ where: { mainChain: mainChainId, sideChain: sideChainId }});
+      fromBlock = log.block;
     } catch (err) {
       fromBlock = originalFromBlock;
     }
