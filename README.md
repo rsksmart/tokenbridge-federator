@@ -27,33 +27,36 @@ To run the federator using Docker, go to the /federator/config folder and rename
 
 ```js
 module.exports = {
-  mainchain: require('./rsktestnet.json'),
-  sidechain: [require('./sepolia.json')],
-  runEvery: 1, // In minutes,
-  confirmations: 10,// Number of blocks before processing it,
+  mainchain: require("./rsktestnet.json"), //the json containing the smart contract addresses in rsk
+  sidechain: [
+    require("./sepolia.json"), //the json containing the smart contract addresses in eth
+  ],
+  runEvery: 2, // In minutes,
   privateKey: process.env.FEDERATOR_KEY || '',
-  storagePath: './db',
-  etherscanApiKey: '<YOUR ETHERSCAN API KEY>',
-  runHeartbeatEvery: 1, // Frequency for emitting HeartBeat events
-  endpointsPort: 5000, // Server port health status endpoint listens on
-  federatorRetries: 0, // amount of federator retries on error, 0 means infinite
+  storagePath: "./db",
+  etherscanApiKey: "",
+  runHeartbeatEvery: 1, // In hours
+  endpointsPort: 5000, // Server port
+  federatorRetries: 0, // 0 means infinite retries
   checkHttps: false,
+  name: 'federator'
 }
 ```
 
-where the mainchain for example is rsktestnet and the sidechain is kovan, the .json files are in the /federator/config folder and includes the addresses of the contracts in that network and the block number when they where deployed.
+where the mainchain for example is rsktestnet and the sidechain is sepolia, the .json files are in the /federator/config folder and includes the addresses of the contracts in that network and the block number when they where deployed.
 The order of sidechain and mainchain is not important is just which one is going to be checked first, as federators are bi directionals.
-Inside the .json files there is also the host to that network, for example this is the rsktestnet-kovan.json
+Inside the .json files there is also the host to that network, for example this is the sepolia.json
 
 ```json
 {
-  "bridge": "0x684a8a976635fb7ad74a0134ace990a6a0fcce84",
-  "federation": "0x36c893a955399cf15a4a2fbef04c0e06d4d9b379",
-  "testToken": "0x5d248f520b023acb815edecd5000b98ef84cbf1b",
-  "multisig": "0x88f6b2bc66f4c31a3669b9b1359524abf79cfc4a",
-  "allowTokens": "0x952b706a9ab5fd2d3b36205648ed7852676afbe7",
-  "host": "<YOUR HOST URL AND PORT>",
-  "fromBlock": 434075
+  "name": "sepolia",
+  "bridge": "0xd31e66af9d830bfc35e493929a8f6523ca2b01b1",
+  "federation": "0x091e26c96e7f4aaef0d85746bb99b733ec28df90",
+  "multiSig": "0xbee2572941ffcb2ab2e61450fecc8db75321e6c9",
+  "allowTokens": "0x926d302f3b6bc4d0eeea9caf6942fd7e0a9a0422",
+  "chainId": 11155111,
+  "host": "https://sepolia.infura.io/v3/<YOUR INFURA API KEY>",
+  "fromBlock": 3724896
 }
 ```
 
@@ -85,7 +88,7 @@ $ npm run build-start
 
 ### Latest block
 
-The federator will use the block number in  `./federator/db/latestBlock.txt` for the main chain and `./federator/db/side-fed/latestBlock.txt` for the side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
+The federator will use the block number in  `./federator/db/federatorDB.sqlite` for the main chain and side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
 If this files don't exist, the program will automatically create them using the `config.fromBlock` number. This is ok, but the default config number is the creation of the contract and may be too far from the current block number, having a negative impact in performance even preventing the program from running. This is way it should be as closest as the current block number minus the confirmations blocks as posible.
 
 ### Docker image
