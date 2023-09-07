@@ -93,18 +93,18 @@ If this files don't exist, the program will automatically create them using the 
 
 ### Docker image
 
-Once you have  changed this configurations create the **docker image from the root folder** using.
-`docker build . -t fed-tokenbridge`
+To run the federator inside Docker container please follow this steps.
+- Inside the config folder rename config.sample.js to config.js
+- In the config file change the mainchain and side chain files to the ones with your configuration, there is an example file for all available networks
+- After you make sure that all config files are ok
+- In the root directory rename the .env.example to .env
+- And put your wallet private key over there, the same one that was registered as federator
 
 Then run :
 
 ```sh
-docker run --rm \
-  --network host \
-  -v $PWD/config:/app/config \
-  -v $PWD/db:/app/db \
-  --name=fed-tokenbridge \
-  fed-tokenbridge:latest
+docker build -t federator .
+docker run -dp 127.0.0.1:3000:3000 federator
 ```
 
 to start the image.
