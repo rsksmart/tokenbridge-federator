@@ -6,7 +6,7 @@ The federators will be the owners of the contracts willing to allow to cross the
 
 ## Config
 
-Go to /federator/config copy `config.sample.js` file and rename it to `config.js` set mainchain and sidechain to point to the json files of the networks you are using, for example rsktestnet-kovan.json and kovan.json, `make sure to set the host parameter of those files`. Add a value to the key `FEDERATOR_KEY` in the .env file, and add the private key of the member of the Federation contract, also you can define a general retry attempts number for the failed processes in the application by setting the value of the key `ENV_DEFAULT_ATTEMPTS` to the number of attempts that you desire, you can use 0 for infinite attempts, if no attempt is provided the default value is 3. The members of the federation are controled by the MultiSig contract, same that is owner of the Bridge and AllowedTokens contracts.
+Go to /config copy `config.sample.js` file and rename it to `config.js` set mainchain and sidechain to point to the json files of the networks you are using, for example rsktestnet-kovan.json and kovan.json, `make sure to set the host parameter of those files`. Add a value to the key `FEDERATOR_KEY` in the .env file, and add the private key of the member of the Federation contract, also you can define a general retry attempts number for the failed processes in the application by setting the value of the key `ENV_DEFAULT_ATTEMPTS` to the number of attempts that you desire, you can use 0 for infinite attempts, if no attempt is provided the default value is 3. The members of the federation are controled by the MultiSig contract, same that is owner of the Bridge and AllowedTokens contracts.
 You will also need to add an [etherscan api key](https://etherscan.io/myapikey) in this config file.
 > Please also note that the private node of RSKj should be running and synced with public one.
 ## Usage
@@ -23,7 +23,7 @@ In order to test with multiple federators, ensure they're added as members of th
 
 ### Config
 
-To run the federator using Docker, go to the /federator/config folder and rename `config.sample.js` to `config.js`. In that file you will determine the networks the federate must be listening to, for example for the bridge in testnet a federator config.js will look like
+To run the federator using Docker, go to the /config folder and rename `config.sample.js` to `config.js`. In that file you will determine the networks the federate must be listening to, for example for the bridge in testnet a federator config.js will look like
 
 ```js
 module.exports = {
@@ -43,7 +43,7 @@ module.exports = {
 }
 ```
 
-where the mainchain for example is rsktestnet and the sidechain is sepolia, the .json files are in the /federator/config folder and includes the addresses of the contracts in that network and the block number when they where deployed.
+where the mainchain for example is rsktestnet and the sidechain is sepolia, the .json files are in the /config folder and includes the addresses of the contracts in that network and the block number when they where deployed.
 The order of sidechain and mainchain is not important is just which one is going to be checked first, as federators are bi directionals.
 Inside the .json files there is also the host to that network, for example this is the sepolia.json
 
@@ -88,7 +88,7 @@ $ npm run build-start
 
 ### Latest block
 
-The federator will use the block number in  `./federator/db/federatorDB.sqlite` for the main chain and side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
+The federator will use the block number in  `./db/federatorDB.sqlite` for the main chain and side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
 If this files don't exist, the program will automatically create them using the `config.fromBlock` number. This is ok, but the default config number is the creation of the contract and may be too far from the current block number, having a negative impact in performance even preventing the program from running. This is way it should be as closest as the current block number minus the confirmations blocks as posible.
 
 ### Docker image
@@ -101,8 +101,8 @@ Then run :
 ```sh
 docker run --rm \
   --network host \
-  -v $PWD/federator/config:/app/federator/config \
-  -v $PWD/federator/db:/app/federator/db \
+  -v $PWD/config:/app/config \
+  -v $PWD/db:/app/db \
   --name=fed-tokenbridge \
   fed-tokenbridge:latest
 ```
