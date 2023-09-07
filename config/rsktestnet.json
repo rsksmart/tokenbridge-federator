@@ -5,6 +5,6 @@
     "multiSig": "0x8285422f7e58ad7f7b90cb5158098edf548e7b38",
     "allowTokens": "0xa683146bb93544068737dfca59f098e7844cdfa8",
     "chainId": 31,
-    "host": "http://flyover-01.aws-us-east-1.testnet.flyover.rifcomputing.net:4444",
+    "host": "<YOUR HOST URL AND PORT>",
     "fromBlock": 3987787
 }
