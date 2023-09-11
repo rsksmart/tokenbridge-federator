@@ -103,11 +103,10 @@ To run the federator inside Docker container please follow this steps.
 Then run :
 
 ```sh
-docker build -t federator .
-docker run -dp 127.0.0.1:3000:3000 federator
+docker-compose up
 ```
 
-to start the image.
+and will run the RSKJ node and the federator.
 
 ### Status endpoint
 
