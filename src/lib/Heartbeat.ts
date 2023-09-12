@@ -8,7 +8,6 @@ import { FederationFactory } from '../contracts/FederationFactory';
 import * as utils from '../lib/utils';
 import { IFederation } from '../contracts/IFederation';
 import { LogWrapper } from './logWrapper';
-import { MetricCollector } from './MetricCollector';
 import * as typescriptUtils from './typescriptUtils';
 import {AppDataSource} from "../services/AppDataSource";
 import {FederatorEntity} from "../entities/Federator.entity";
@@ -23,9 +22,8 @@ export class Heartbeat {
   transactionSender: any;
   lastBlockPath: string;
   federationFactory: FederationFactory;
-  metricCollector: MetricCollector;
 
-  constructor(config: Config, logger: LogWrapper, metricCollector: MetricCollector) {
+  constructor(config: Config, logger: LogWrapper) {
     this.config = config;
     this.logger = logger;
     if (this.logger.upsertContext) {
@@ -33,7 +31,6 @@ export class Heartbeat {
     }
     this.mainWeb3 = new Web3(config.mainchain.host);
 
-    this.metricCollector = metricCollector;
     this.federationFactory = new FederationFactory();
     this.transactionSender = new TransactionSender(this.mainWeb3, this.logger, this.config);
     this.lastBlockPath = `${config.storagePath || __dirname}/heartBeatLastBlock.txt`;
@@ -254,24 +251,6 @@ export class Heartbeat {
       logInfo += `[blockNumber: ${fedChainsBlocks[i]}],`;
       logInfo += `[chainInfo: ${fedChainsInfo[i]}]`;
       this.logger.info(logInfo);
-
-      if (utils.checkIfItsInRSK(fedChainsIds[i])) {
-        this.metricCollector?.trackMainChainHeartbeatEmission(
-          sender,
-          fedVersion,
-          fedChainsBlocks[i],
-          fedChainsInfo[i],
-          fedChainsIds[i],
-        );
-      } else {
-        this.metricCollector?.trackSideChainHeartbeatEmission(
-          sender,
-          fedVersion,
-          fedChainsBlocks[i],
-          fedChainsInfo[i],
-          fedChainsIds[i],
-        );
-      }
     }
   }
 
