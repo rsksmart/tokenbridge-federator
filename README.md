@@ -99,15 +99,15 @@ To run the federator inside Docker container please follow this steps.
 - After you make sure that all config files are ok
 - In the root directory rename the .env.example to .env
 - And put your wallet private key over there, the same one that was registered as federator
+- In the config files for the main chain and side chain change the "fromBlock" parameter to be as close as possible from the last block before your federator being up and running.
 
 Then run :
 
 ```sh
-docker build -t federator .
-docker run -dp 127.0.0.1:3000:3000 federator
+docker-compose up
 ```
 
-to start the image.
+and will run the RSKJ node and the federator.
 
 ### Status endpoint
 
