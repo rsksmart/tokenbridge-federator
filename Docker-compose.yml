@@ -1,0 +1,18 @@
+version: '3'
+services:
+  fed-ccbridge:
+    build:
+      context: .
+    volumes:
+      - './config:/app/config'
+      - './db:/app/db'
+    depends_on:
+      - rskj
+  rskj:
+    image: rsksmart/rskj:FINGERROOT-5.2.0
+    ports:
+      - "4444:4444"
+    volumes:
+      - /var/lib/rsk/database:/var/lib/rsk/database
+      - /var/log/rsk:/var/lib/rsk/logs
+      - /etc/rsk:/etc/rsk/
