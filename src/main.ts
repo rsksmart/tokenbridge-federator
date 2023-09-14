@@ -3,7 +3,6 @@ import * as utils from './lib/utils';
 import Scheduler from './services/Scheduler';
 import Federator from './lib/FederatorERC';
 import Heartbeat from './lib/Heartbeat';
-import { MetricCollector } from './lib/MetricCollector';
 import { Endpoint } from './lib/Endpoints';
 import { ConfigChain } from './lib/configChain';
 import { LogWrapper } from './lib/logWrapper';
@@ -22,7 +21,6 @@ import {config} from "dotenv";
 export class Main {
   logger: LogWrapper;
   endpoint: any;
-  metricCollector: MetricCollector;
   rskFederator: Federator;
   config: Config;
   heartbeat: Heartbeat;
@@ -34,22 +32,15 @@ export class Main {
     this.config = Config.getInstance();
     this.endpoint = new Endpoint(Logs.getInstance().getLogger(LOGGER_CATEGORY_ENDPOINT), this.config.endpointsPort);
     this.endpoint.init();
-    try {
-      this.metricCollector = new MetricCollector();
-    } catch (error) {
-      this.logger.warn(`Error creating MetricCollector instance:`, error);
-    }
 
     this.heartbeat = new Heartbeat(
       this.config,
       Logs.getInstance().getLogger(LOGGER_CATEGORY_HEARTBEAT),
-      this.metricCollector,
     );
 
     this.rskFederator = new Federator(
       this.config,
       Logs.getInstance().getLogger(LOGGER_CATEGORY_FEDERATOR_MAIN),
-      this.metricCollector,
     );
   }
 
@@ -101,7 +92,6 @@ export class Main {
         sidechain: [this.config.mainchain],
       },
       Logs.getInstance().getLogger(LOGGER_CATEGORY_FEDERATOR_SIDE),
-      this.metricCollector,
     );
 
     this.logger.info('Side Host', sideChainConfig.host);
