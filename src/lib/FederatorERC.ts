@@ -1,5 +1,4 @@
 import {ConfigData} from './config';
-import {MetricCollector} from './MetricCollector';
 import web3 from 'web3';
 import fs from 'fs';
 import TransactionSender from './TransactionSender';
@@ -24,8 +23,8 @@ import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
 
 export default class FederatorERC extends Federator {
-    constructor(config: ConfigData, logger: LogWrapper, metricCollector: MetricCollector) {
-        super(config, logger, metricCollector);
+    constructor(config: ConfigData, logger: LogWrapper) {
+        super(config, logger);
     }
 
     async run({
@@ -450,12 +449,6 @@ export default class FederatorERC extends Federator {
                 });
             }
 
-            await this.trackTransactionResultMetric(
-                receipt.status,
-                voteTransactionParams.federatorAddress,
-                voteTransactionParams.sideFedContract,
-            );
-
             return true;
         } catch (err) {
             throw new CustomError(
@@ -463,14 +456,5 @@ export default class FederatorERC extends Federator {
                 err,
             );
         }
-    }
-
-    async trackTransactionResultMetric(wasTransactionVoted, federatorAddress, federator: IFederation) {
-        this.metricCollector?.trackERC20FederatorVotingResult(
-            wasTransactionVoted,
-            federatorAddress,
-            federator.getVersion(),
-            await this.getCurrentChainId(),
-        );
     }
 }
