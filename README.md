@@ -103,11 +103,61 @@ To run the federator inside Docker container please follow this steps.
 
 Then run :
 
+### Configure, build and run the whole solution with docker compose for RSK MainNet.
+###### Ensure your user belongs to docker group.
 ```sh
-docker-compose up
+sudo usermod -aG docker $USER
 ```
 
-and will run the RSKJ node and the federator.
+```sh
+sudo mkdir /var/lib/rsk/database /var/log/rsk /etc/rsk
+sudo wget https://raw.githubusercontent.com/rsksmart/artifacts/master/rskj-ubuntu-installer/config/logback.xml -P /etc/rsk/
+sudo wget https://raw.githubusercontent.com/rsksmart/artifacts/master/rskj-ubuntu-installer/config/mainnet.conf -O /var/lib/rsk/node.conf
+sudo chown $USER:$USER /var/lib/rsk/database /var/log/rsk /etc/rsk
+```
+
+###### [With all federator configuration done](https://github.com/rsksmart/tokenbridge-federator#config "With all federator configuration done");  simply run:
+
+```sh
+docker compose build
+docker compose up -d
+```
+
+###### RSKj Details:
+Log files will be located in:
+* /var/log/rsk
+
+Database will be located in:
+* /var/lib/rsk/database/mainnet
+
+Configuration files:
+* /etc/rsk/node.conf
+* /etc/rsk/logback.xml
+
+More information about how to customize rskj node configuration [here](https://dev.rootstock.io/rsk/node/ "here")
+
+###### As and example of how to configure to run you might want to change the `rpc` to this:
+```
+rpc {
+  providers {
+    web {
+      cors = "*"
+      http {
+        enabled = true
+        bind_address = 0.0.0.0
+        hosts = [
+          "127.0.0.1",
+          "::1",
+          "localhost",
+          "rskj-node01",
+          "172.17.0.1",
+        ]
+        port = 4444
+      }
+    } 
+  }
+}
+```
 
 ### Status endpoint
 
