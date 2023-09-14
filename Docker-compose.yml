@@ -4,8 +4,8 @@ services:
     build:
       context: .
     volumes:
-      - './config:/app/config'
-      - './db:/app/db'
+      - './config:/app/federator/config'
+      - './db:/app/federator/db'
     depends_on:
       - rskj
   rskj:
