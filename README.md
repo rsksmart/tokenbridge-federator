@@ -100,6 +100,8 @@ To run the federator inside Docker container please follow this steps.
 - In the root directory rename the .env.example to .env
 - And put your wallet private key over there, the same one that was registered as federator
 - In the config files for the main chain and side chain change the "fromBlock" parameter to be as close as possible from the last block before your federator being up and running.
+  - For Ethereum mainnet you can get it in here [LAST FINALIZED BLOCK](https://etherscan.io/)
+  - For RSK mainnet you can get it in here [LAST BLOCK](https://explorer.rsk.co/)
 
 Then run :
 
