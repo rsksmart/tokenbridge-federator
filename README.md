@@ -112,10 +112,10 @@ sudo usermod -aG docker $USER
 ```
 
 ```sh
-sudo mkdir /var/lib/rsk/database /var/log/rsk /etc/rsk
+sudo mkdir /var/lib/rsk/database /var/log/rsk /etc/rsk/db
 sudo wget https://raw.githubusercontent.com/rsksmart/artifacts/master/rskj-ubuntu-installer/config/logback.xml -P /etc/rsk/
 sudo wget https://raw.githubusercontent.com/rsksmart/artifacts/master/rskj-ubuntu-installer/config/mainnet.conf -O /var/lib/rsk/node.conf
-sudo chown $USER:$USER /var/lib/rsk/database /var/log/rsk /etc/rsk
+sudo chown $USER:$USER /var/lib/rsk/database /var/log/rsk /etc/rsk/db -r
 ```
 
 ###### [With all federator configuration done](https://github.com/rsksmart/tokenbridge-federator#config "With all federator configuration done");  simply run:
