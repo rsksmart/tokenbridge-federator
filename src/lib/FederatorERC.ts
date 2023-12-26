@@ -1,6 +1,5 @@
 import {ConfigData} from './config';
 import web3 from 'web3';
-import fs from 'fs';
 import TransactionSender from './TransactionSender';
 import {CustomError} from './CustomError';
 import {BridgeFactory} from '../contracts/BridgeFactory';
@@ -21,6 +20,14 @@ import {
 } from '../types/federator';
 import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
+import {Votes} from "../entities/Votes";
+
+type ValidateAndVoteReturn = {
+    receipt: any,
+    wasVotedBefore: boolean,
+    wasProcessed: boolean,
+    voteSuccess: boolean
+}
 
 export default class FederatorERC extends Federator {
     constructor(config: ConfigData, logger: LogWrapper) {
@@ -373,9 +380,8 @@ export default class FederatorERC extends Federator {
         try {
             voteTransactionParams.transactionId = voteTransactionParams.transactionId.toLowerCase();
             this.logger.info(
-                `TransactionId ${voteTransactionParams.transactionId} Voting Transfer ${voteTransactionParams.amount}
-        of originalTokenAddress:${voteTransactionParams.tokenAddress} trough sidechain bridge
-        ${voteTransactionParams.sideChainConfig.bridge} to receiver ${voteTransactionParams.receiver}`,
+                `Starting vote process for the TX ${voteTransactionParams.transactionHash} from 
+                ${voteTransactionParams.originChainId} with transactionId ${voteTransactionParams.transactionId}`,
             );
 
             const txDataAbi = await voteTransactionParams.sideFedContract.getVoteTransactionABI({
@@ -390,71 +396,121 @@ export default class FederatorERC extends Federator {
                 destinationChainId: voteTransactionParams.destinationChainId,
             });
 
-            let revertedTx: FailedTransactions | null;
-
-            const revertedTxnsPath = this.getRevertedTxnsPath(
-                voteTransactionParams.sideChainId,
-                voteTransactionParams.mainChainId,
-            );
-            if (fs.existsSync(revertedTxnsPath)) {
-                revertedTx = await AppDataSource.getRepository(FailedTransactions)
-                    .findOne({
-                        where: {
-                            mainChain: voteTransactionParams.mainChainId,
-                            sideChain: voteTransactionParams.sideChainId,
-                            transactionId: voteTransactionParams.transactionId
-                        }
-                    });
-            }
-
-            if (revertedTx) {
-                this.logger.warn(
-                    `Skipping Voting ${voteTransactionParams.amount} of originalTokenAddress:${voteTransactionParams.tokenAddress}
-          TransactionId ${voteTransactionParams.transactionId} since it's marked as reverted.`,
-                    revertedTx.txData,
-                );
-                return false;
-            }
-
-            const receipt = await voteTransactionParams.transactionSender.sendTransaction(
-                voteTransactionParams.sideFedContract.getAddress(),
-                txDataAbi,
-                0,
-                this.config.privateKey,
-            );
-
-            if (!receipt.status) {
-                this.logger.error(
-                    `Voting ${voteTransactionParams.amount} of originalTokenAddress:${voteTransactionParams.tokenAddress}
-          TransactionId ${voteTransactionParams.transactionId} failed, check the receipt`,
-                    receipt,
-                );
-
-                await AppDataSource.getRepository(FailedTransactions).insert({
-                    mainChain: voteTransactionParams.mainChainId,
-                    sideChain: voteTransactionParams.sideChainId,
-                    transactionId: voteTransactionParams.transactionId,
-                    txData: JSON.stringify({
-                        originalTokenAddress: voteTransactionParams.tokenAddress,
-                        sender: voteTransactionParams.senderAddress,
-                        receiver: voteTransactionParams.receiver,
-                        amount: voteTransactionParams.amount,
-                        blockHash: voteTransactionParams.blockHash,
-                        transactionHash: voteTransactionParams.transactionHash,
-                        logIndex: voteTransactionParams.logIndex,
-                        error: receipt.error,
-                        status: receipt.status,
-                        receipt: {...receipt},
-                    })
-                });
-            }
-
-            return true;
+            await this.verifyIfwasRevertedAndRetry(voteTransactionParams, txDataAbi);
         } catch (err) {
             throw new CustomError(
                 `Exception Voting tx:${voteTransactionParams.transactionHash} block: ${voteTransactionParams.blockHash} originalTokenAddress: ${voteTransactionParams.tokenAddress}`,
                 err,
             );
         }
+    }
+
+    async verifyIfwasRevertedAndRetry(params, txAbi) {
+        const revertedTx = await AppDataSource.getRepository(FailedTransactions)
+          .findOne({
+              where: {
+                  mainChain: params.mainChainId,
+                  sideChain: params.sideChainId,
+                  transactionId: params.transactionId
+              }
+          });
+
+        const result = await this.validateAndVote(params, txAbi);
+
+        if (revertedTx) {
+            if(result.voteSuccess || result.wasVotedBefore || result.wasProcessed) {
+                await AppDataSource.getRepository(FailedTransactions).delete({
+                    mainChain: params.mainChainId,
+                    sideChain: params.sideChainId,
+                    transactionId: params.transactionId
+                });
+            }
+        }
+    }
+
+    async validateAndVote(params, txDataAbi): Promise<ValidateAndVoteReturn> {
+        const validateAndVoteReturn: ValidateAndVoteReturn = {} as ValidateAndVoteReturn;
+
+        const fedAddress = await params.transactionSender.getAddress(this.config.privateKey);
+
+        const hasVoted = await params.sideFedContract
+          .hasVoted(params.transactionId, fedAddress);
+
+        const hasVotedDb = await AppDataSource.getRepository(Votes).findOne({
+            where: {transactionId: params.transactionId}});
+
+        const wasProcessed = await params.sideFedContract
+          .transactionWasProcessed(params.transactionId);
+
+        if(hasVoted || wasProcessed || hasVotedDb) {
+            this.logger.warn(`Transaction ${params.transactionId} will not be voted by the 
+                federator: ${fedAddress} hasVoted result ${hasVoted} - wasProcessed result ${wasProcessed} hasVotedDb 
+                result ${hasVotedDb}`);
+            if(hasVoted || hasVotedDb) {
+                validateAndVoteReturn.wasVotedBefore = true;
+            }
+            if(wasProcessed) {
+                validateAndVoteReturn.wasProcessed = true;
+            }
+            validateAndVoteReturn.receipt = null;
+            validateAndVoteReturn.voteSuccess = false;
+
+            return validateAndVoteReturn;
+        }
+
+        const receipt = await params.transactionSender.sendTransaction(
+          params.sideFedContract.getAddress(),
+          txDataAbi,
+          0,
+          this.config.privateKey,
+        );
+
+        if(receipt.status) {
+            validateAndVoteReturn.receipt = receipt;
+            validateAndVoteReturn.voteSuccess = true;
+
+            await AppDataSource.getRepository(Votes).insert({
+                voted: true,
+                transactionId: params.transactionId,
+                transactionData: JSON.stringify(params)
+            });
+        } else {
+            validateAndVoteReturn.receipt = null;
+            validateAndVoteReturn.voteSuccess = false;
+
+            this.logger.error(
+              `Voting ${params.amount} of originalTokenAddress:${params.tokenAddress}
+                        TransactionId ${params.transactionId} failed, check the receipt`,
+              receipt,
+            );
+
+            const hasFailedBefore = await AppDataSource.getRepository(FailedTransactions)
+              .findOne({
+                  where: {
+                      transactionId: params.transactionId
+                  }
+              });
+
+            if(!hasFailedBefore) {
+                await AppDataSource.getRepository(FailedTransactions).insert({
+                    mainChain: params.mainChainId,
+                    sideChain: params.sideChainId,
+                    transactionId: params.transactionId,
+                    txData: JSON.stringify({
+                        originalTokenAddress: params.tokenAddress,
+                        sender: params.senderAddress,
+                        receiver: params.receiver,
+                        amount: params.amount,
+                        blockHash: params.blockHash,
+                        transactionHash: params.transactionHash,
+                        logIndex: params.logIndex,
+                        error: receipt.error,
+                        status: receipt.status,
+                        receipt: {...receipt},
+                    })
+                });
+            }
+        }
+        return validateAndVoteReturn;
     }
 }
