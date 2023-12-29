@@ -428,7 +428,12 @@ export default class FederatorERC extends Federator {
     }
 
     async validateAndVote(params, txDataAbi): Promise<ValidateAndVoteReturn> {
-        const validateAndVoteReturn: ValidateAndVoteReturn = {} as ValidateAndVoteReturn;
+        const validateAndVoteReturn: ValidateAndVoteReturn = {
+            receipt: null,
+            voteSuccess: false,
+            wasVotedBefore: false,
+            wasProcessed: false
+        };
 
         const fedAddress = await params.transactionSender.getAddress(this.config.privateKey);
 
@@ -445,12 +450,9 @@ export default class FederatorERC extends Federator {
             this.logger.warn(`Transaction ${params.transactionId} will not be voted by the 
                 federator: ${fedAddress} hasVoted result ${hasVoted} - wasProcessed result ${wasProcessed} hasVotedDb 
                 result ${hasVotedDb}`);
-            if(hasVoted || hasVotedDb) {
-                validateAndVoteReturn.wasVotedBefore = true;
-            }
-            if(wasProcessed) {
-                validateAndVoteReturn.wasProcessed = true;
-            }
+
+            validateAndVoteReturn.wasVotedBefore = hasVoted || hasVotedDb;
+            validateAndVoteReturn.wasProcessed = wasProcessed;
             validateAndVoteReturn.receipt = null;
             validateAndVoteReturn.voteSuccess = false;
 
