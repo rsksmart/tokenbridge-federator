@@ -24,7 +24,7 @@ import {Votes} from "../entities/Votes";
 
 
 type ValidateAndVoteReturn = {
-    receipt: any,
+    receipt: unknown,
     wasVotedBefore: boolean,
     wasProcessed: boolean,
     voteSuccess: boolean
