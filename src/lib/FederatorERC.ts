@@ -22,6 +22,7 @@ import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
 import {Votes} from "../entities/Votes";
 
+
 type ValidateAndVoteReturn = {
     receipt: any,
     wasVotedBefore: boolean,
@@ -417,14 +418,12 @@ export default class FederatorERC extends Federator {
 
         const result = await this.validateAndVote(params, txAbi);
 
-        if (revertedTx) {
-            if(result.voteSuccess || result.wasVotedBefore || result.wasProcessed) {
-                await AppDataSource.getRepository(FailedTransactions).delete({
+        if (revertedTx && (result.voteSuccess || result.wasVotedBefore || result.wasProcessed)) {
+            await AppDataSource.getRepository(FailedTransactions).delete({
                     mainChain: params.mainChainId,
                     sideChain: params.sideChainId,
                     transactionId: params.transactionId
-                });
-            }
+            });
         }
     }
 
