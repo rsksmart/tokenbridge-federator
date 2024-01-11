@@ -473,7 +473,18 @@ export default class FederatorERC extends Federator {
             await AppDataSource.getRepository(Votes).insert({
                 voted: true,
                 transactionId: params.transactionId,
-                transactionData: JSON.stringify(params)
+                transactionData: JSON.stringify({
+                    transactionId: params.transactionId,
+                    status: receipt.status,
+                    blockHash: receipt.blockHash,
+                    blockNumber: receipt.blockNumber,
+                    transactionHash: receipt.transactionHash,
+                    from: receipt.from,
+                    to: receipt.to,
+                    cumulativeGasUsed: receipt.cumulativeGasUsed,
+                    amount: params.amount,
+                    originalTokenAddress: params.tokenAddress,
+                })
             });
         } else {
             validateAndVoteReturn.receipt = null;
