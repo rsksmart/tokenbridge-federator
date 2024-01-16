@@ -17,6 +17,7 @@ import {
 import {AppDataSource} from "./services/AppDataSource";
 import {FederatorEntity} from "./entities/Federator.entity";
 import {config} from "dotenv";
+import {insertFederator} from "./models/federator.model";
 
 export class Main {
   logger: LogWrapper;
@@ -56,7 +57,7 @@ export class Main {
       fedEntity.name = this.config.name;
       fedEntity.heartBeatLastBlock = this.config.mainchain.fromBlock;
 
-      await entityManager.insert(fedEntity);
+      await insertFederator(fedEntity);
     }
 
     this.scheduleFederatorProcesses();

@@ -11,6 +11,7 @@ import { LogWrapper } from './logWrapper';
 import * as typescriptUtils from './typescriptUtils';
 import {AppDataSource} from "../services/AppDataSource";
 import {FederatorEntity} from "../entities/Federator.entity";
+import {getFederatorByName, updateFederator} from "../models/federator.model";
 
 const currentVersion = process.env.npm_package_version;
 
@@ -84,8 +85,7 @@ export class Heartbeat {
     let fromBlock = null;
     let federator: FederatorEntity | null = null;
     try {
-      const fedRepository = AppDataSource.getRepository(FederatorEntity);
-      federator = await fedRepository.findOne({ where: { name: this.config.name }});
+      federator = await getFederatorByName(this.config.name);
     } catch (err) {
       fromBlock = originalFromBlock;
     }
@@ -256,8 +256,11 @@ export class Heartbeat {
 
   async _saveProgress(name: string, value: number) {
     if (value) {
-      await AppDataSource.createQueryBuilder().update(FederatorEntity)
-          .set({ heartBeatLastBlock: value }).where("name = :name", { name }).execute();
+      const dataToUpdate:Partial<FederatorEntity> = {
+        heartBeatLastBlock: value
+      };
+
+      await updateFederator(dataToUpdate, name);
     }
   }
 
