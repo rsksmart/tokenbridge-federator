@@ -5,7 +5,7 @@ export class FailedTransactions {
     @PrimaryGeneratedColumn()
     id: number;
     @Column()
-    retried: number;
+    timesRetried: number;
     @Column()
     mainChain: number;
     @Column()

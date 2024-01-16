@@ -443,10 +443,19 @@ export default class FederatorERC extends Federator {
         const hasVotedDb = await AppDataSource.getRepository(Votes).findOne({
             where: {transactionId: params.transactionId}});
 
+        const failedRetry = await AppDataSource.getRepository(FailedTransactions).findOne(
+          {
+              where: {
+                  transactionId: params.transactionId,
+                  timesRetried: this.config.maxFailedTxRetry
+              }
+          }
+        );
+
         const wasProcessed = await params.sideFedContract
           .transactionWasProcessed(params.transactionId);
 
-        if(hasVoted || wasProcessed || hasVotedDb) {
+        if(hasVoted || wasProcessed || hasVotedDb || failedRetry) {
             this.logger.warn(`Transaction ${params.transactionId} will not be voted by the 
                 federator: ${fedAddress} hasVoted result ${hasVoted} - wasProcessed result ${wasProcessed} hasVotedDb 
                 result ${hasVotedDb}`);
@@ -508,6 +517,7 @@ export default class FederatorERC extends Federator {
                     mainChain: params.mainChainId,
                     sideChain: params.sideChainId,
                     transactionId: params.transactionId,
+                    timesRetried: 1,
                     txData: JSON.stringify({
                         originalTokenAddress: params.tokenAddress,
                         sender: params.senderAddress,
@@ -520,6 +530,11 @@ export default class FederatorERC extends Federator {
                         status: receipt.status,
                         receipt: {...receipt},
                     })
+                });
+            } else {
+                await AppDataSource.getRepository(FailedTransactions).update(hasFailedBefore.id, {
+                    timesRetried: hasFailedBefore.timesRetried + 1 > this.config.maxFailedTxRetry ?
+                      this.config.maxFailedTxRetry : hasFailedBefore.timesRetried + 1
                 });
             }
         }
