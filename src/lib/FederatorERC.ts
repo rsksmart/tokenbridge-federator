@@ -26,6 +26,7 @@ import {
     findFailedTransaction,
     insertFailedTransaction, updateFailedTransaction
 } from "../models/failedTransactions.model";
+import {getVote, insertVote} from "../models/votes.model";
 
 
 type ValidateAndVoteReturn = {
@@ -442,8 +443,7 @@ export default class FederatorERC extends Federator {
         const hasVoted = await params.sideFedContract
           .hasVoted(params.transactionId, fedAddress);
 
-        const hasVotedDb = await AppDataSource.getRepository(Votes).findOne({
-            where: {transactionId: params.transactionId}});
+        const hasVotedDb = await getVote({transactionId: params.transactionId});
 
         const failedRetry = await findFailedTransaction({
             transactionId: params.transactionId,
@@ -477,7 +477,7 @@ export default class FederatorERC extends Federator {
             validateAndVoteReturn.receipt = receipt;
             validateAndVoteReturn.voteSuccess = true;
 
-            await AppDataSource.getRepository(Votes).insert({
+            const dataToInsert: Partial<Votes> = {
                 voted: true,
                 transactionId: params.transactionId,
                 transactionData: JSON.stringify({
@@ -492,7 +492,9 @@ export default class FederatorERC extends Federator {
                     amount: params.amount,
                     originalTokenAddress: params.tokenAddress,
                 })
-            });
+            };
+
+            await insertVote(dataToInsert);
         } else {
             validateAndVoteReturn.receipt = null;
             validateAndVoteReturn.voteSuccess = false;
