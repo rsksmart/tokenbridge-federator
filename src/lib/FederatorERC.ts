@@ -21,6 +21,11 @@ import {
 import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
 import {Votes} from "../entities/Votes";
+import {
+    deleteFailedTransaction,
+    findFailedTransaction,
+    insertFailedTransaction, updateFailedTransaction
+} from "../models/failedTransactions.model";
 
 
 type ValidateAndVoteReturn = {
@@ -407,22 +412,19 @@ export default class FederatorERC extends Federator {
     }
 
     async verifyIfwasRevertedAndRetry(params, txAbi) {
-        const revertedTx = await AppDataSource.getRepository(FailedTransactions)
-          .findOne({
-              where: {
-                  mainChain: params.mainChainId,
-                  sideChain: params.sideChainId,
-                  transactionId: params.transactionId
-              }
-          });
+        const revertedTx = await findFailedTransaction({
+            mainChain: params.mainChainId,
+            sideChain: params.sideChainId,
+            transactionId: params.transactionId
+        });
 
         const result = await this.validateAndVote(params, txAbi);
 
         if (revertedTx && (result.voteSuccess || result.wasVotedBefore || result.wasProcessed)) {
-            await AppDataSource.getRepository(FailedTransactions).delete({
-                    mainChain: params.mainChainId,
-                    sideChain: params.sideChainId,
-                    transactionId: params.transactionId
+            await deleteFailedTransaction({
+                mainChain: params.mainChainId,
+                sideChain: params.sideChainId,
+                transactionId: params.transactionId
             });
         }
     }
@@ -443,14 +445,10 @@ export default class FederatorERC extends Federator {
         const hasVotedDb = await AppDataSource.getRepository(Votes).findOne({
             where: {transactionId: params.transactionId}});
 
-        const failedRetry = await AppDataSource.getRepository(FailedTransactions).findOne(
-          {
-              where: {
-                  transactionId: params.transactionId,
-                  timesRetried: this.config.maxFailedTxRetry
-              }
-          }
-        );
+        const failedRetry = await findFailedTransaction({
+            transactionId: params.transactionId,
+            timesRetried: this.config.maxFailedTxRetry
+        });
 
         const wasProcessed = await params.sideFedContract
           .transactionWasProcessed(params.transactionId);
@@ -505,15 +503,12 @@ export default class FederatorERC extends Federator {
               receipt,
             );
 
-            const hasFailedBefore = await AppDataSource.getRepository(FailedTransactions)
-              .findOne({
-                  where: {
-                      transactionId: params.transactionId
-                  }
-              });
+            const hasFailedBefore = await findFailedTransaction({
+                transactionId: params.transactionId
+            });
 
             if(!hasFailedBefore) {
-                await AppDataSource.getRepository(FailedTransactions).insert({
+                const dataToInsert: Partial<FailedTransactions> = {
                     mainChain: params.mainChainId,
                     sideChain: params.sideChainId,
                     transactionId: params.transactionId,
@@ -530,9 +525,10 @@ export default class FederatorERC extends Federator {
                         status: receipt.status,
                         receipt: {...receipt},
                     })
-                });
+                };
+                await insertFailedTransaction(dataToInsert);
             } else {
-                await AppDataSource.getRepository(FailedTransactions).update(hasFailedBefore.id, {
+                await updateFailedTransaction(hasFailedBefore.id, {
                     timesRetried: hasFailedBefore.timesRetried + 1 > this.config.maxFailedTxRetry ?
                       this.config.maxFailedTxRetry : hasFailedBefore.timesRetried + 1
                 });
