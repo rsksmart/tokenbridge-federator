@@ -27,6 +27,7 @@ import {
     insertFailedTransaction, updateFailedTransaction
 } from "../models/failedTransactions.model";
 import {getVote, insertVote} from "../models/votes.model";
+import {insertLogDebug} from "../models/logDebug.model";
 
 
 type ValidateAndVoteReturn = {
@@ -64,21 +65,21 @@ export default class FederatorERC extends Federator {
         this.logger.trace(`Federator Run started currentBlock: ${currentBlock}, currentChainId: ${mainChainId}`);
         const isMainSyncing = await this.getMainChainWeb3().eth.isSyncing();
         if (isMainSyncing !== false) {
-            this.logger.warn(
-                `ChainId ${mainChainId} is Syncing, ${JSON.stringify(
-                    isMainSyncing,
-                )}. Federator won't process requests till is synced`,
-            );
+            const message = `ChainId ${mainChainId} is Syncing, ${JSON.stringify(
+              isMainSyncing,
+            )}. Federator won't process requests till is synced`;
+            this.logger.warn(message);
+            await insertLogDebug(message);
             return false;
         }
 
         const isSideSyncing = await sideChainWeb3.eth.isSyncing();
         if (isSideSyncing !== false) {
-            this.logger.warn(
-                `ChainId ${sideChainId} is Syncing, ${JSON.stringify(
-                    isSideSyncing,
-                )}. Federator won't process requests till is synced`,
-            );
+            const message = `ChainId ${sideChainId} is Syncing, ${JSON.stringify(
+              isSideSyncing,
+            )}. Federator won't process requests till is synced`;
+            this.logger.warn(message);
+            await insertLogDebug(message);
             return false;
         }
 
@@ -140,9 +141,9 @@ export default class FederatorERC extends Federator {
     }
 
     async getLogsAndProcess(getLogParams: GetLogsParams) {
-        this.logger.trace(
-            `getLogsAndProcess started currentBlock: ${getLogParams.currentBlock}, fromBlock: ${getLogParams.fromBlock}, toBlock: ${getLogParams.toBlock}`,
-        );
+        const message = `getLogsAndProcess started currentBlock: ${getLogParams.currentBlock}, fromBlock: ${getLogParams.fromBlock}, toBlock: ${getLogParams.toBlock}`;
+        this.logger.trace(message);
+        await insertLogDebug(message);
         if (getLogParams.fromBlock >= getLogParams.toBlock) {
             this.logger.trace('getLogsAndProcess fromBlock >= toBlock', getLogParams.fromBlock, getLogParams.toBlock);
             return;
@@ -229,10 +230,10 @@ export default class FederatorERC extends Federator {
                 tokenAddress: tokenAddress,
             }));
             if (!allowed) {
-                throw new Error(
-                    `Original Token not allowed nor side token Tx:${transactionHash} originalTokenAddress:${tokenAddress}
-            Bridge Contract Addr ${originBridge}`,
-                );
+                const message = `Original Token not allowed nor side token Tx:${transactionHash} originalTokenAddress:${tokenAddress}
+            Bridge Contract Addr ${originBridge}`;
+                await insertLogDebug(message);
+                throw new Error(message);
             }
         } else {
             ({allowed, mediumAmount, largeAmount} = await processLogParams.allowTokens.getLimits({
@@ -288,6 +289,7 @@ export default class FederatorERC extends Federator {
             }),
         );
         this.logger.info('get transaction id:', transactionId);
+        await insertLogDebug(`Processing transactionID: ${transactionId}`)
 
         await this.processTransaction({
             ...processLogParams,
@@ -315,6 +317,7 @@ export default class FederatorERC extends Federator {
             destinationChainId: processTransactionParams.destinationChainId,
         };
         this.logger.info('===dataToHash===', dataToHash);
+        await insertLogDebug(JSON.stringify(dataToHash));
         this.logger.warn('===log===', processTransactionParams.log);
         const transactionDataHash = await typescriptUtils.retryNTimes(
             processTransactionParams.sideBridgeContract.getTransactionDataHash(dataToHash),
@@ -323,10 +326,10 @@ export default class FederatorERC extends Federator {
             processTransactionParams.sideBridgeContract.getProcessed(transactionDataHash),
         );
         if (wasProcessed) {
-            this.logger.info(
-                `Already processed Block: ${processTransactionParams.log.blockHash} Tx: ${processTransactionParams.log.transactionHash}
-          originalTokenAddress: ${processTransactionParams.tokenAddress}`,
-            );
+            const message = `Already processed Block: ${processTransactionParams.log.blockHash} Tx: ${processTransactionParams.log.transactionHash}
+          originalTokenAddress: ${processTransactionParams.tokenAddress}`;
+            this.logger.info(message);
+            await insertLogDebug(message);
             return;
         }
         const hasVoted = await processTransactionParams.sideFedContract.hasVoted(
@@ -334,16 +337,16 @@ export default class FederatorERC extends Federator {
             processTransactionParams.federatorAddress,
         );
         if (hasVoted) {
-            this.logger.debug(
-                `Block: ${processTransactionParams.log.blockHash} Tx: ${processTransactionParams.log.transactionHash}
-        originalTokenAddress: ${processTransactionParams.tokenAddress}  has already been voted by us`,
-            );
+            const message = `Block: ${processTransactionParams.log.blockHash} Tx: ${processTransactionParams.log.transactionHash}
+        originalTokenAddress: ${processTransactionParams.tokenAddress}  has already been voted by us`;
+            this.logger.debug(message);
+            await insertLogDebug(message);
             return;
         }
-        this.logger.info(
-            `Voting tx: ${processTransactionParams.log.transactionHash} block: ${processTransactionParams.log.blockHash}
-      originalTokenAddress: ${processTransactionParams.tokenAddress}`,
-        );
+        const message = `Voting tx: ${processTransactionParams.log.transactionHash} block: ${processTransactionParams.log.blockHash}
+      originalTokenAddress: ${processTransactionParams.tokenAddress}`;
+        this.logger.info(message);
+        await insertLogDebug(message);
         await this._voteTransaction({
             ...processTransactionParams,
             blockHash: processTransactionParams.log.blockHash,
@@ -386,10 +389,10 @@ export default class FederatorERC extends Federator {
     async _voteTransaction(voteTransactionParams: VoteTransactionParams) {
         try {
             voteTransactionParams.transactionId = voteTransactionParams.transactionId.toLowerCase();
-            this.logger.info(
-                `Starting vote process for the TX ${voteTransactionParams.transactionHash} from 
-                ${voteTransactionParams.originChainId} with transactionId ${voteTransactionParams.transactionId}`,
-            );
+            const message = `Starting vote process for the TX ${voteTransactionParams.transactionHash} from 
+                ${voteTransactionParams.originChainId} with transactionId ${voteTransactionParams.transactionId}`;
+            await insertLogDebug(message);
+            this.logger.info(message);
 
             const txDataAbi = await voteTransactionParams.sideFedContract.getVoteTransactionABI({
                 originalTokenAddress: voteTransactionParams.tokenAddress,
@@ -454,9 +457,11 @@ export default class FederatorERC extends Federator {
           .transactionWasProcessed(params.transactionId);
 
         if(hasVoted || wasProcessed || hasVotedDb || failedRetry) {
-            this.logger.warn(`Transaction ${params.transactionId} will not be voted by the 
+            const message = `Transaction ${params.transactionId} will not be voted by the 
                 federator: ${fedAddress} hasVoted result ${hasVoted} - wasProcessed result ${wasProcessed} hasVotedDb 
-                result ${hasVotedDb}`);
+                result ${hasVotedDb}`;
+            this.logger.warn(message);
+            await insertLogDebug(message);
 
             validateAndVoteReturn.wasVotedBefore = hasVoted || hasVotedDb;
             validateAndVoteReturn.wasProcessed = wasProcessed;
@@ -499,11 +504,10 @@ export default class FederatorERC extends Federator {
             validateAndVoteReturn.receipt = null;
             validateAndVoteReturn.voteSuccess = false;
 
-            this.logger.error(
-              `Voting ${params.amount} of originalTokenAddress:${params.tokenAddress}
-                        TransactionId ${params.transactionId} failed, check the receipt`,
-              receipt,
-            );
+            const message = `Voting ${params.amount} of originalTokenAddress:${params.tokenAddress}
+                        TransactionId ${params.transactionId} failed, check the receipt`;
+            this.logger.error(message, receipt);
+            await insertLogDebug(message + ` tx Hash: ${receipt.transactionHash}`)
 
             const hasFailedBefore = await findFailedTransaction({
                 transactionId: params.transactionId

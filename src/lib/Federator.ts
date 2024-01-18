@@ -13,6 +13,7 @@ import { LogWrapper } from './logWrapper';
 import {AppDataSource} from "../services/AppDataSource";
 import {Log} from "../entities/Log";
 import {getLog, insertLog, updateLog} from "../models/log.model";
+import {clearOldLogs} from "../models/logDebug.model";
 
 export default abstract class Federator {
   public logger: LogWrapper;
@@ -186,5 +187,6 @@ export default abstract class Federator {
         await insertLog({ mainChain, sideChain, block: value });
       }
     }
+    await clearOldLogs();
   }
 }
