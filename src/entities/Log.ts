@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn} from 'typeorm';
 
 @Entity()
 export class Log {
@@ -10,4 +10,8 @@ export class Log {
     sideChain: number;
     @Column()
     block: number
+    @CreateDateColumn()
+    createdAt: Date
+    @UpdateDateColumn()
+    updatedAt: Date
 }
