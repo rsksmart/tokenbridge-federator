@@ -12,6 +12,8 @@ import { IFederation } from '../contracts/IFederation';
 import { LogWrapper } from './logWrapper';
 import {AppDataSource} from "../services/AppDataSource";
 import {Log} from "../entities/Log";
+import {getLog, insertLog, updateLog} from "../models/log.model";
+import {clearOldLogs} from "../models/logDebug.model";
 
 export default abstract class Federator {
   public logger: LogWrapper;
@@ -77,8 +79,7 @@ export default abstract class Federator {
     let fromBlock: number = null;
     const originalFromBlock = this.config.mainchain.fromBlock || 0;
     try {
-      const log = await AppDataSource.getRepository(Log)
-          .findOne({ where: { mainChain: mainChainId, sideChain: sideChainId }});
+      const log = await getLog(mainChainId, sideChainId);
       fromBlock = log.block;
     } catch (err) {
       fromBlock = originalFromBlock;
@@ -178,14 +179,14 @@ export default abstract class Federator {
 
   async _saveProgress(mainChain: number, sideChain: number, value: number) {
     if (value) {
-      const log = await AppDataSource.getRepository(Log)
-          .findOne({ where: { mainChain, sideChain }});
+      const log = await getLog(mainChain, sideChain);
 
       if (log) {
-        await AppDataSource.getRepository(Log).update({id: log.id}, { block: value });
+        await updateLog(log.id, { block: value });
       } else {
-        await AppDataSource.getRepository(Log).insert({ mainChain, sideChain, block: value })
+        await insertLog({ mainChain, sideChain, block: value });
       }
     }
+    await clearOldLogs();
   }
 }

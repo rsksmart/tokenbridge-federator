@@ -16,6 +16,7 @@ export interface JsonConfigParams {
   checkHttps?: boolean;
   explorer?: string;
   name: string;
+  maxFailedTxRetry: number;
 }
 
 export class ConfigData {
@@ -31,6 +32,7 @@ export class ConfigData {
   checkHttps: boolean;
   explorer?: string;
   name: string;
+  maxFailedTxRetry: number;
 }
 
 export class Config extends ConfigData {
@@ -50,6 +52,7 @@ export class Config extends ConfigData {
     this.federatorRetries = jsonConfig.federatorRetries ?? DEFAULT_RETRIE_TIMES;
     this.checkHttps = jsonConfig.checkHttps ?? true;
     this.name = jsonConfig.name;
+    this.maxFailedTxRetry = jsonConfig.maxFailedTxRetry;
   }
 
   private getConfigs(): ConfigChain[] {
