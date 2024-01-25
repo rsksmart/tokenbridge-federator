@@ -1,6 +1,7 @@
 import * as ethUtils from 'ethereumjs-util';
 import Web3 from 'web3';
 import { RetryCounter } from './typescriptUtils';
+import axios from "axios";
 
 /**
  * Retry system with async / await
@@ -164,9 +165,13 @@ export function checkIfItsInRSK(chainId = -1) {
 }
 
 export async function getHeartbeatPollingInterval({ host, runHeartbeatEvery = 1 }) {
-  const web3 = new Web3(host);
-  const chainId = await web3.eth.net.getId();
-  return [30, 31].includes(chainId) ? 1000 * 60 * 60 : runHeartbeatEvery * 1000 * 60;
+  const isNodeOnline = await verifyEndpoint(host);
+  if(isNodeOnline) {
+    const web3 = new Web3(host);
+    const chainId = await web3.eth.net.getId();
+    return [30, 31].includes(chainId) ? 1000 * 60 * 60 : runHeartbeatEvery * 1000 * 60;
+  }
+  return runHeartbeatEvery * 1000 * 60;
 }
 
 export async function asyncMine(anotherWeb3Instance = null) {
@@ -222,4 +227,22 @@ export function clone(instance: any): any {
   const copy = new (instance.constructor as { new (): any })();
   Object.assign(copy, instance);
   return copy;
+}
+
+export async function verifyEndpoint(url: string): Promise<boolean> {
+  try {
+    if(!url.startsWith('http')) {
+      return false;
+    }
+
+    const data = await axios.post(url,
+      {"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":83});
+
+    if (data.status === 200) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
 }

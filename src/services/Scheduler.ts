@@ -1,3 +1,6 @@
+import {Config} from "../lib/config";
+import {verifyEndpoint} from "../lib/utils";
+
 const DEFAULT_POLLING_INTERVAL_MS = 1000 * 60 * 60; //Default once an hour
 
 export class Scheduler {
@@ -6,13 +9,15 @@ export class Scheduler {
   pollingInterval: any;
   running: any;
   service: any;
+  config: Config;
 
-  constructor(pollingInterval, logger, service) {
+  constructor(pollingInterval, logger, config: Config, service) {
     this.logger = logger;
     this.pollingTimeout = null;
     this.pollingInterval = pollingInterval != null ? pollingInterval : DEFAULT_POLLING_INTERVAL_MS;
     this.running = false;
     this.service = service;
+    this.config = config;
   }
 
   async start() {
@@ -28,8 +33,13 @@ export class Scheduler {
     this.logger.info('scheduler triggered poll');
     if (this.running) {
       this.pollingTimeout = null;
-      await this.service.run();
-      this.logger.info('scheduler poll run succesful, trigger next poll in ', this.pollingInterval);
+
+      if(await verifyEndpoint(this.config.mainchain.host)) {
+        await this.service.run();
+        this.logger.info('scheduler poll run succesful, trigger next poll in ', this.pollingInterval);
+      } else {
+        this.logger.error('Could not reach the RSKJ node, please verify if the node is up and running');
+      }
       // Trigger next poll
       this.pollingTimeout = setTimeout(() => this.poll(), this.pollingInterval);
     } else {
