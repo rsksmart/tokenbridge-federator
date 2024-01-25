@@ -16,8 +16,8 @@ import {
 } from './lib/logs';
 import {AppDataSource} from "./services/AppDataSource";
 import {FederatorEntity} from "./entities/Federator.entity";
-import {config} from "dotenv";
 import {insertFederator} from "./models/federator.model";
+import {verifyEndpoint} from "./lib/utils";
 
 export class Main {
   logger: LogWrapper;
@@ -33,16 +33,21 @@ export class Main {
     this.config = Config.getInstance();
     this.endpoint = new Endpoint(Logs.getInstance().getLogger(LOGGER_CATEGORY_ENDPOINT), this.config.endpointsPort);
     this.endpoint.init();
+    verifyEndpoint(this.config.mainchain.host).then((isOnline) => {
+      if(isOnline) {
+        this.heartbeat = new Heartbeat(
+          this.config,
+          Logs.getInstance().getLogger(LOGGER_CATEGORY_HEARTBEAT),
+        );
 
-    this.heartbeat = new Heartbeat(
-      this.config,
-      Logs.getInstance().getLogger(LOGGER_CATEGORY_HEARTBEAT),
-    );
-
-    this.rskFederator = new Federator(
-      this.config,
-      Logs.getInstance().getLogger(LOGGER_CATEGORY_FEDERATOR_MAIN),
-    );
+        this.rskFederator = new Federator(
+          this.config,
+          Logs.getInstance().getLogger(LOGGER_CATEGORY_FEDERATOR_MAIN),
+        );
+      } else {
+        this.logger.error('Please verify your RSKJ node host in the config file');
+      }
+    });
   }
 
   async start() {
@@ -101,7 +106,7 @@ export class Main {
 
   async scheduleFederatorProcesses() {
     const federatorPollingInterval = this.config.runEvery * 1000 * 60; // Minutes
-    this.federatorScheduler = new Scheduler(federatorPollingInterval, this.logger, {
+    this.federatorScheduler = new Scheduler(federatorPollingInterval, this.logger, this.config, {
       run: async () => {
         try {
           await this.runFederator();
@@ -123,7 +128,7 @@ export class Main {
       runHeartbeatEvery: this.config.runHeartbeatEvery,
     });
 
-    this.heartBeatScheduler = new Scheduler(heartBeatPollingInterval, this.logger, {
+    this.heartBeatScheduler = new Scheduler(heartBeatPollingInterval, this.logger, this.config, {
       run: async () => {
         try {
           const result = await this.heartbeat.run();
