@@ -1,4 +1,5 @@
-import Tx from 'ethereumjs-tx';
+import { Transaction as Tx } from 'ethereumjs-tx';
+import Common from 'ethereumjs-common';
 import * as ethUtils from 'ethereumjs-util';
 import * as utils from '../lib/utils';
 import * as fs from 'fs';
@@ -110,7 +111,7 @@ export class TransactionSender {
   }
 
   async getChainId() {
-    if (this.chainId === undefined) {
+    if (this.chainId === undefined || this.chainId === null) {
       this.chainId = parseInt(await this.client.eth.net.getId());
     }
     return this.chainId;
@@ -136,15 +137,14 @@ export class TransactionSender {
       r: 0,
       s: 0,
     };
-    
+
     if (await this.isRsk()) {
-      delete rawTx.chainId;
       delete rawTx.r;
       delete rawTx.s;
     }
 
     rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
-    
+
     if (this.debuggingMode) {
       rawTx.gas = this.numberToHexString(100);
       this.logger.warn(`debugging mode enabled, forced rawTx.gas ${rawTx.gas}`);
@@ -154,7 +154,16 @@ export class TransactionSender {
   }
 
   signRawTransaction(rawTx, privateKey) {
-    const tx = new Tx(rawTx);
+    const customCommon = Common.forCustomChain(
+      'mainnet',
+      {
+        name: 'rsk-federator',
+        chainId: rawTx.chainId,
+      },
+      'petersburg',
+    )
+
+    const tx = new Tx(rawTx, { common: customCommon });
     tx.sign(utils.hexStringToBuffer(privateKey));
     return tx;
   }
