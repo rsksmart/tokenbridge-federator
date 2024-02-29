@@ -9,6 +9,7 @@ import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 import { IFederation } from './IFederation';
 import { ConfigChain } from '../lib/configChain';
+import {ContractAbi} from "web3";
 
 export class FederationFactory extends ContractFactory {
   async createInstance(configChain: ConfigChain, privateKey: string): Promise<IFederation> {
@@ -37,11 +38,10 @@ export class FederationFactory extends ContractFactory {
     }
   }
 
-  async getVersion(federationContract: Contract) {
+  async getVersion(federationContract: Contract<ContractAbi>) {
     try {
       return await typescriptUtils.retryNTimes(federationContract.methods.version().call());
     } catch (err) {
-      console.log(err)
       return 'v2';
     }
   }
