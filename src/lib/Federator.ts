@@ -43,7 +43,7 @@ export default abstract class Federator {
 
   async getCurrentChainId() {
     if (this.chainId === undefined) {
-      this.chainId = await this.getMainChainWeb3().eth.net.getId();
+      this.chainId = Number(await this.getMainChainWeb3().eth.net.getId());
     }
     return this.chainId;
   }

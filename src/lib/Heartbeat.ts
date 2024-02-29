@@ -56,12 +56,12 @@ export class Heartbeat {
         const fedChainInfo = [];
 
         fedChainsId.push(this.config.mainchain.chainId);
-        fedChainsBlocks.push(await typescriptUtils.retryNTimes(this.mainWeb3.eth.getBlockNumber()));
+        fedChainsBlocks.push(Number(await typescriptUtils.retryNTimes(this.mainWeb3.eth.getBlockNumber())));
         fedChainInfo.push(await typescriptUtils.retryNTimes(this.mainWeb3.eth.getNodeInfo()));
 
         for (const sideChain of this.sideChains) {
           fedChainsId.push(sideChain.chainId);
-          fedChainsBlocks.push(await typescriptUtils.retryNTimes(sideChain.web3.eth.getBlockNumber()));
+          fedChainsBlocks.push(Number(await typescriptUtils.retryNTimes(sideChain.web3.eth.getBlockNumber())));
           fedChainInfo.push(await typescriptUtils.retryNTimes(sideChain.web3.eth.getNodeInfo()));
         }
 
@@ -134,7 +134,7 @@ export class Heartbeat {
     const sleepAfterRetrie = 3000;
     while (retryCounter.hasAttempts()) {
       try {
-        const currentBlock = await this.mainWeb3.eth.getBlockNumber();
+        const currentBlock = Number(await this.mainWeb3.eth.getBlockNumber());
         const fedContract = await this.federationFactory.createInstance(this.config.mainchain, this.config.privateKey);
 
         const toBlock = currentBlock;

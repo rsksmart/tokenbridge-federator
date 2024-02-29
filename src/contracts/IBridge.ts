@@ -1,13 +1,14 @@
-import { Contract, EventData } from 'web3-eth-contract';
+import { Contract, EventLog } from 'web3-eth-contract';
+import {ContractAbi} from "web3";
 
 export interface IBridge {
-  bridgeContract: Contract;
+  bridgeContract: Contract<ContractAbi>;
 
   getFederation();
 
   getAllowedTokens();
 
-  getPastEvents(eventName: string, destinationChainId: number, options: any): Promise<EventData[]>;
+  getPastEvents(eventName: string, destinationChainId: number, options: any): Promise<(string | EventLog)[]>;
 
   getAddress(): string;
 
