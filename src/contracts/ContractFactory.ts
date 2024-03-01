@@ -1,9 +1,9 @@
-import Web3 from 'web3';
+import Web3, {ContractAbi} from 'web3';
 import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 
 export class ContractFactory {
-  contractsByChainIdAndAbi: { [key: number]: Map<AbiItem[], Contract> };
+  contractsByChainIdAndAbi: { [key: number]: Map<AbiItem[], Contract<ContractAbi>> };
   public web3ByHost: Map<string, Web3>;
 
   constructor() {
@@ -12,7 +12,7 @@ export class ContractFactory {
   }
 
   // There should only be one address per abi per chainId - the address is only needed to create a new web3.eth.Contract object.
-  getContractByAbiAndChainId(abi: AbiItem[], address: string, web3: Web3, chainId: number): Contract {
+  getContractByAbiAndChainId(abi: AbiItem[], address: string, web3: Web3, chainId: number): Contract<ContractAbi> {
     let contractForChainId = this.contractsByChainIdAndAbi[chainId];
     if (!contractForChainId) {
       contractForChainId = new Map();

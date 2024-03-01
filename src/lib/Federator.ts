@@ -10,8 +10,6 @@ import * as typescriptUtils from './typescriptUtils';
 import { ConfigChain } from './configChain';
 import { IFederation } from '../contracts/IFederation';
 import { LogWrapper } from './logWrapper';
-import {AppDataSource} from "../services/AppDataSource";
-import {Log} from "../entities/Log";
 import {getLog, insertLog, updateLog} from "../models/log.model";
 import {clearOldLogs} from "../models/logDebug.model";
 
@@ -45,7 +43,7 @@ export default abstract class Federator {
 
   async getCurrentChainId() {
     if (this.chainId === undefined) {
-      this.chainId = await this.getMainChainWeb3().eth.net.getId();
+      this.chainId = Number(await this.getMainChainWeb3().eth.net.getId());
     }
     return this.chainId;
   }

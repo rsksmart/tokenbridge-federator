@@ -1,9 +1,10 @@
-import { Contract, EventData } from 'web3-eth-contract';
+import { Contract, EventLog } from 'web3-eth-contract';
 import { ConfigChain } from '../lib/configChain';
 import { TransactionIdParams, VoteTransactionV3Params } from '../types/federator';
+import {ContractAbi} from "web3";
 
 export interface IFederation {
-  federationContract: Contract;
+  federationContract: Contract<ContractAbi>;
   config: ConfigChain;
 
   getVersion(): string;
@@ -16,11 +17,11 @@ export interface IFederation {
 
   hasVoted(txId: string, from: string): Promise<boolean>;
 
-  getVoteTransactionABI(paramsObj: VoteTransactionV3Params): Promise<any>;
+  getVoteTransactionABI(paramsObj: VoteTransactionV3Params): string;
 
   getAddress(): string;
 
-  getPastEvents(eventName: string, options: any): Promise<EventData[]>;
+  getPastEvents(eventName: string, options: any): Promise<(string | EventLog)[]>;
 
   emitHeartbeat(
     txSender: { sendTransaction: (arg0: string, arg1: any, arg2: number, arg3: string) => any },

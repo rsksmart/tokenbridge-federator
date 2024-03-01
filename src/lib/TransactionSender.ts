@@ -1,4 +1,5 @@
-import Tx from 'ethereumjs-tx';
+import { Transaction as Tx } from 'ethereumjs-tx';
+import Common from 'ethereumjs-common';
 import * as ethUtils from 'ethereumjs-util';
 import * as utils from '../lib/utils';
 import * as fs from 'fs';
@@ -8,8 +9,16 @@ import { CustomError } from './CustomError';
 const ESTIMATED_GAS = 250000;
 
 import * as chains from './chainId';
+import Web3, {Transaction} from "web3";
+
+export interface JsonRpcCallResponse {
+  jsonrpc: string;
+  id: number;
+  result: string;
+}
+
 export class TransactionSender {
-  client: any;
+  client: Web3;
   logger: any;
   chainId: any;
   manuallyCheck: any;
@@ -43,23 +52,33 @@ export class TransactionSender {
     return this.getEthGasPrice();
   }
 
-  async getGasLimit(rawTx) {
-    const estimatedGas = await this.client.eth.estimateGas({
-      gasPrice: rawTx.gasPrice,
-      value: rawTx.value,
-      to: rawTx.to,
-      data: rawTx.data,
+  async getGasLimit(rawTx: any) {
+    const tx = {
       from: rawTx.from,
-    });
-    // Gas estimation does not work correctly on RSK and after the London harfork, neither is working on Ethereum
-    // example https://etherscan.io/tx/0xd30d6cf428606e2ef3667427b9b6baecb2f4c9cbb44a0c82c735a238ec8f72fb
-    // To fix it, we decided to use a hardcoded gas estimation
-    return +estimatedGas < ESTIMATED_GAS ? ESTIMATED_GAS : +estimatedGas;
+      to: rawTx.to,
+      value: rawTx.value,
+      data: rawTx.data,
+      nonce: rawTx.nonce
+    };
+
+    const returned = await this.client.currentProvider.request(
+        {
+          method: "eth_estimateGas",
+          params: [tx],
+          jsonrpc: "2.0",
+          id: 1
+        }
+      );
+    if (returned.error) {
+      throw new Error(returned.error);
+    }
+
+    return this.client.utils.hexToNumber(returned.result as string);
   }
 
   async getEthGasPrice() {
     const chainId = await this.getChainId();
-    const gasPrice = parseInt(await this.client.eth.getGasPrice());
+    const gasPrice = Number(await this.client.eth.getGasPrice());
     const useGasPrice = gasPrice <= 1 ? 1 : Math.round(gasPrice * 1.5);
     if (chainId === 1) {
       const data = {
@@ -104,14 +123,13 @@ export class TransactionSender {
   }
 
   async getRskGasPrice() {
-    const block = await this.client.eth.getBlock('latest');
-    const gasPrice = parseInt(block.minimumGasPrice);
+    const gasPrice = Number(await this.client.eth.getGasPrice());
     return gasPrice <= 1 ? 1 : Math.round(gasPrice * 1.03);
   }
 
   async getChainId() {
-    if (this.chainId === undefined) {
-      this.chainId = parseInt(await this.client.eth.net.getId());
+    if (this.chainId === undefined || this.chainId === null) {
+      this.chainId = Number(await this.client.eth.net.getId());
     }
     return this.chainId;
   }
@@ -136,15 +154,13 @@ export class TransactionSender {
       r: 0,
       s: 0,
     };
-    
+
     if (await this.isRsk()) {
-      delete rawTx.chainId;
       delete rawTx.r;
       delete rawTx.s;
     }
 
     rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
-    
     if (this.debuggingMode) {
       rawTx.gas = this.numberToHexString(100);
       this.logger.warn(`debugging mode enabled, forced rawTx.gas ${rawTx.gas}`);
@@ -154,7 +170,16 @@ export class TransactionSender {
   }
 
   signRawTransaction(rawTx, privateKey) {
-    const tx = new Tx(rawTx);
+    const customCommon = Common.forCustomChain(
+      'mainnet',
+      {
+        name: 'rsk-federator',
+        chainId: rawTx.chainId,
+      },
+      'petersburg',
+    )
+
+    const tx = new Tx(rawTx, { common: customCommon });
     tx.sign(utils.hexStringToBuffer(privateKey));
     return tx;
   }
@@ -201,7 +226,7 @@ export class TransactionSender {
 
   async sendTransaction(to, data, value, privateKey, throwOnError = false) {
     const chainId = await this.getChainId();
-    let txHash;
+    let txHash: string;
     let receipt;
     let rawTx;
     try {
@@ -210,25 +235,25 @@ export class TransactionSender {
       if (privateKey && privateKey.length) {
         const signedTx = this.signRawTransaction(rawTx, privateKey);
         const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
-        receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', async (hash) => {
-          txHash = hash;
-          if (chainId === 1) {
-            // send a POST request to Etherscan, we broadcast the same transaction as GETH is not working correclty
-            // see  https://github.com/ethereum/go-ethereum/issues/22308
-            const dataProxy = {
-              module: 'proxy',
-              action: 'eth_sendRawTransaction',
-              hex: serializedTx,
-            };
-            await this.useEtherscanApi(dataProxy);
-          }
-        });
+        receipt = await this.client.eth.sendSignedTransaction(serializedTx);
+        txHash = receipt.transactionHash;
+        if (chainId === 1) {
+          // send a POST request to Etherscan, we broadcast the same transaction as GETH is not working correclty
+          // see  https://github.com/ethereum/go-ethereum/issues/22308
+          const dataProxy = {
+            module: 'proxy',
+            action: 'eth_sendRawTransaction',
+            hex: serializedTx,
+          };
+          await this.useEtherscanApi(dataProxy);
+        }
       } else {
         //If no private key provided we use personal (personal is only for testing)
         delete rawTx.r;
         delete rawTx.s;
         delete rawTx.v;
-        receipt = await this.client.eth.sendTransaction(rawTx).once('transactionHash', (hash) => (txHash = hash));
+        receipt = await this.client.eth.sendTransaction(rawTx);
+        txHash = receipt.transactionHash;
       }
 
       if (receipt.status) {
