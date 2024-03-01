@@ -18,7 +18,6 @@ import {
     ProcessTransactionParams,
     VoteTransactionParams,
 } from '../types/federator';
-import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
 import {Votes} from "../entities/Votes";
 import {
@@ -55,9 +54,9 @@ export default class FederatorERC extends Federator {
         bridgeFactory: BridgeFactory;
         federationFactory: FederationFactory;
     }): Promise<boolean> {
-        const currentBlock = await this.getMainChainWeb3().eth.getBlockNumber();
-        const mainChainId = await this.getCurrentChainId();
-        const sideChainId = await this.getChainId(sideChainWeb3);
+        const currentBlock = Number(await this.getMainChainWeb3().eth.getBlockNumber());
+        const mainChainId = Number(await this.getCurrentChainId());
+        const sideChainId = Number(await this.getChainId(sideChainWeb3));
         this.logger.upsertContext('Main Chain ID', mainChainId);
         this.logger.upsertContext('Side Chain ID', sideChainId);
         const allowTokensFactory = new AllowTokensFactory();
@@ -105,6 +104,7 @@ export default class FederatorERC extends Federator {
         }
         fromBlock = fromBlock + 1;
         this.logger.debug('Running from Block', fromBlock);
+
         await this.getLogsAndProcess({
             sideChainId,
             mainChainId,
@@ -195,9 +195,11 @@ export default class FederatorERC extends Federator {
     async processLog(processLogParams: ProcessLogParams): Promise<boolean> {
         this.logger.info('Processing event log:', processLogParams.log);
 
-        const {blockHash, transactionHash, logIndex, blockNumber} = processLogParams.log;
+        let {blockHash, transactionHash, logIndex, blockNumber} = processLogParams.log;
+        logIndex = Number(logIndex);
+        blockNumber = Number(blockNumber);
 
-        const {
+        let {
             _to: receiver,
             _from: crossFromAddress,
             _amount: amount,
@@ -207,6 +209,7 @@ export default class FederatorERC extends Federator {
             _destinationChainId: destinationChainIdStr,
         } = processLogParams.log.returnValues;
         this.logger.trace('log.returnValues', processLogParams.log.returnValues);
+        amount = Number(amount)
 
         const originChainId = Number(originChainIdStr);
         const destinationChainId = Number(destinationChainIdStr);
@@ -246,14 +249,14 @@ export default class FederatorERC extends Federator {
             }
         }
 
-        const mediumAmountBN = web3.utils.toBN(mediumAmount);
-        const largeAmountBN = web3.utils.toBN(largeAmount);
-        const amountBN = web3.utils.toBN(amount);
+        const mediumAmountBN = web3.utils.toBigInt(mediumAmount);
+        const largeAmountBN = web3.utils.toBigInt(largeAmount);
+        const amountBN = web3.utils.toBigInt(amount);
 
         if (processLogParams.mediumAndSmall) {
             // At this point we're processing blocks newer than largeAmountConfirmations
             // and older than smallAmountConfirmations
-            if (amountBN.gte(largeAmountBN)) {
+            if (amountBN > largeAmountBN) {
                 const confirmations = processLogParams.currentBlock - blockNumber;
                 const neededConfirmations = processLogParams.confirmations.largeAmountConfirmations;
                 this.logger.debug(
@@ -263,7 +266,7 @@ export default class FederatorERC extends Federator {
             }
 
             if (
-                amountBN.gte(mediumAmountBN) &&
+                amountBN > mediumAmountBN &&
                 processLogParams.currentBlock - blockNumber < processLogParams.confirmations.mediumAmountConfirmations
             ) {
                 const confirmations = processLogParams.currentBlock - blockNumber;
@@ -312,7 +315,7 @@ export default class FederatorERC extends Federator {
             amount: processTransactionParams.amount,
             blockHash: processTransactionParams.log.blockHash,
             transactionHash: processTransactionParams.log.transactionHash,
-            logIndex: processTransactionParams.log.logIndex,
+            logIndex: Number(processTransactionParams.log.logIndex),
             originChainId: processTransactionParams.originChainId,
             destinationChainId: processTransactionParams.destinationChainId,
         };
@@ -487,13 +490,13 @@ export default class FederatorERC extends Federator {
                 transactionId: params.transactionId,
                 transactionData: JSON.stringify({
                     transactionId: params.transactionId,
-                    status: receipt.status,
+                    status: Number(receipt.status),
                     blockHash: receipt.blockHash,
-                    blockNumber: receipt.blockNumber,
+                    blockNumber: Number(receipt.blockNumber),
                     transactionHash: receipt.transactionHash,
                     from: receipt.from,
                     to: receipt.to,
-                    cumulativeGasUsed: receipt.cumulativeGasUsed,
+                    cumulativeGasUsed: Number(receipt.cumulativeGasUsed),
                     amount: params.amount,
                     originalTokenAddress: params.tokenAddress,
                 })

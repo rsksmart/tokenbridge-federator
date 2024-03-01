@@ -1,5 +1,6 @@
-import { Contract, EventData } from 'web3-eth-contract';
+import { Contract, EventLog } from 'web3-eth-contract';
 import { IBridge } from './IBridge';
+import {ContractAbi} from "web3";
 
 interface SideTokenAddressByOriginalTokenInterface {
   originalTokenAddress: string;
@@ -7,10 +8,10 @@ interface SideTokenAddressByOriginalTokenInterface {
 }
 
 export class IBridgeV4 implements IBridge {
-  bridgeContract: Contract;
+  bridgeContract: Contract<ContractAbi>;
   chainId: number;
 
-  constructor(bridgeContract: Contract, chainId: number) {
+  constructor(bridgeContract: Contract<ContractAbi>, chainId: number) {
     this.bridgeContract = bridgeContract;
     this.chainId = chainId;
   }
@@ -23,8 +24,9 @@ export class IBridgeV4 implements IBridge {
     return this.bridgeContract.methods.allowedTokens();
   }
 
-  getPastEvents(eventName: string, destinationChainId: number, options: any): Promise<EventData[]> {
+  getPastEvents(eventName: string, destinationChainId: number, options: any): Promise<(string | EventLog)[]> {
     options.filter = { _destinationChainId: destinationChainId };
+    // @ts-ignore
     return this.bridgeContract.getPastEvents(eventName, options);
   }
 

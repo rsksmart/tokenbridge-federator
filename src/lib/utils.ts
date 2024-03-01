@@ -169,7 +169,7 @@ export async function getHeartbeatPollingInterval({ host, runHeartbeatEvery = 1 
   if(isNodeOnline) {
     const web3 = new Web3(host);
     const chainId = await web3.eth.net.getId();
-    return [30, 31].includes(chainId) ? 1000 * 60 * 60 : runHeartbeatEvery * 1000 * 60;
+    return [30, 31].includes(Number(chainId)) ? 1000 * 60 * 60 : runHeartbeatEvery * 1000 * 60;
   }
   return runHeartbeatEvery * 1000 * 60;
 }
