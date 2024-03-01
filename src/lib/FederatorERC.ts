@@ -18,7 +18,6 @@ import {
     ProcessTransactionParams,
     VoteTransactionParams,
 } from '../types/federator';
-import {AppDataSource} from "../services/AppDataSource";
 import {FailedTransactions} from "../entities/FailedTransactions";
 import {Votes} from "../entities/Votes";
 import {
@@ -28,7 +27,6 @@ import {
 } from "../models/failedTransactions.model";
 import {getVote, insertVote} from "../models/votes.model";
 import {insertLogDebug} from "../models/logDebug.model";
-import {log} from "node:util";
 
 
 type ValidateAndVoteReturn = {
