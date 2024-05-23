@@ -497,7 +497,7 @@ export default class FederatorERC extends Federator {
                     from: receipt.from,
                     to: receipt.to,
                     cumulativeGasUsed: Number(receipt.cumulativeGasUsed),
-                    amount: params.amount,
+                    amount: params.amount.toString(),
                     originalTokenAddress: params.tokenAddress,
                 })
             };
@@ -526,10 +526,10 @@ export default class FederatorERC extends Federator {
                         originalTokenAddress: params.tokenAddress,
                         sender: params.senderAddress,
                         receiver: params.receiver,
-                        amount: params.amount,
+                        amount: params.amount.toString(),
                         blockHash: params.blockHash,
                         transactionHash: params.transactionHash,
-                        logIndex: params.logIndex,
+                        logIndex: params.logIndex.toString(),
                         error: receipt.error,
                         status: receipt.status,
                         receipt: {...receipt},
