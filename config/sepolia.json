@@ -5,6 +5,6 @@
     "multiSig": "0xbee2572941ffcb2ab2e61450fecc8db75321e6c9",
     "allowTokens": "0x926d302f3b6bc4d0eeea9caf6942fd7e0a9a0422",
     "chainId": 11155111,
-    "host": "Seolia Node Host",
-    "fromBlock": 5380000
+    "host": "",
+    "fromBlock": 6500000
 }
