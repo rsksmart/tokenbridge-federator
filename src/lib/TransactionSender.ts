@@ -132,11 +132,12 @@ export class TransactionSender {
   async getChainId() {
     console.info('getChainId', this.chainId);
     if (this.chainId === undefined || this.chainId === null) {
-      this.logger.error('chainId is undefined, trying to get it from the node');
-      this.chainId = Number(await this.client.eth.getChainId());
-    }
-    if (this.chainId === undefined || this.chainId === null) {
-      throw new Error('chainId is undefined, please check your config files and restart');
+      this.logger.warn('chainId is undefined, getting it from the node');
+      const chainId = await this.client.eth.getChainId();
+      if (this.chainId === undefined || this.chainId === null) {
+        throw new Error('chainId is undefined, check your config files and start the server again');
+      }
+      this.chainId = Number(chainId);
     }
     return this.chainId;
   }
