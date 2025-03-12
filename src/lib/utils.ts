@@ -168,7 +168,7 @@ export async function getHeartbeatPollingInterval({ host, runHeartbeatEvery = 1 
   const isNodeOnline = await verifyEndpoint(host);
   if(isNodeOnline) {
     const web3 = new Web3(host);
-    const chainId = await web3.eth.net.getId();
+    const chainId = await web3.eth.getChainId();
     return [30, 31].includes(Number(chainId)) ? 1000 * 60 * 60 : runHeartbeatEvery * 1000 * 60;
   }
   return runHeartbeatEvery * 1000 * 60;

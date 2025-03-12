@@ -43,13 +43,13 @@ export default abstract class Federator {
 
   async getCurrentChainId() {
     if (this.chainId === undefined) {
-      this.chainId = Number(await this.getMainChainWeb3().eth.net.getId());
+      this.chainId = Number(await this.getMainChainWeb3().eth.getChainId());
     }
     return this.chainId;
   }
 
   async getChainId(client: web3) {
-    return client.eth.net.getId();
+    return client.eth.getChainId();
   }
 
   getLastBlockPath(mainChainId: number, sideChainId: number): string {
@@ -119,7 +119,7 @@ export default abstract class Federator {
       this.logger.trace(`${this.constructor.name} from ${this.config.mainchain.chainId} to ${sideChainConfig.chainId}`);
       this.resetRetries();
       const sideChainWeb3 = this.getWeb3(sideChainConfig.host);
-      const transactionSender = new TransactionSender(sideChainWeb3, this.logger, this.config);
+      const transactionSender = new TransactionSender(sideChainWeb3, this.logger, this.config, sideChainConfig.chainId);
       const federationFactory = new FederationFactory();
       const fedContract = await federationFactory.createInstance(sideChainConfig, this.config.privateKey);
       const from = await transactionSender.getAddress(this.config.privateKey);

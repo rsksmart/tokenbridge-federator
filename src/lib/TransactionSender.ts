@@ -25,10 +25,10 @@ export class TransactionSender {
   etherscanApiKey: any;
   debuggingMode: any;
 
-  constructor(client, logger, config) {
+  constructor(client, logger, config, chainId) {
     this.client = client;
     this.logger = logger;
-    this.chainId = null;
+    this.chainId = chainId;
     this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
     this.etherscanApiKey = config.etherscanApiKey;
     this.debuggingMode = false;
@@ -129,7 +129,12 @@ export class TransactionSender {
 
   async getChainId() {
     if (this.chainId === undefined || this.chainId === null) {
-      this.chainId = Number(await this.client.eth.net.getId());
+      this.logger.warn('chainId is undefined, getting it from the node');
+      const chainId = await this.client.eth.getChainId();
+      if (this.chainId === undefined || this.chainId === null) {
+        throw new Error('chainId is undefined, check your config files and start the server again');
+      }
+      this.chainId = Number(chainId);
     }
     return this.chainId;
   }
