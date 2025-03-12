@@ -33,7 +33,7 @@ export class Heartbeat {
     this.mainWeb3 = new Web3(config.mainchain.host);
 
     this.federationFactory = new FederationFactory();
-    this.transactionSender = new TransactionSender(this.mainWeb3, this.logger, this.config);
+    this.transactionSender = new TransactionSender(this.mainWeb3, this.logger, this.config, config.mainchain.chainId);
     this.lastBlockPath = `${config.storagePath || __dirname}/heartBeatLastBlock.txt`;
     this.sideChains = [];
     for (const sideChainConfig of config.sidechain) {
