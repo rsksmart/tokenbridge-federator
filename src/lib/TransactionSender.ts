@@ -24,11 +24,13 @@ export class TransactionSender {
   manuallyCheck: any;
   etherscanApiKey: any;
   debuggingMode: any;
+  config: any;
 
-  constructor(client, logger, config) {
+  constructor(client, logger, config, chainId) {
     this.client = client;
     this.logger = logger;
-    this.chainId = null;
+    this.config = config;
+    this.chainId = chainId;
     this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
     this.etherscanApiKey = config.etherscanApiKey;
     this.debuggingMode = false;
@@ -128,8 +130,13 @@ export class TransactionSender {
   }
 
   async getChainId() {
+    console.info('getChainId', this.chainId);
     if (this.chainId === undefined || this.chainId === null) {
-      this.chainId = Number(await this.client.eth.net.getId());
+      this.logger.error('chainId is undefined, trying to get it from the node');
+      this.chainId = Number(await this.client.eth.getChainId());
+    }
+    if (this.chainId === undefined || this.chainId === null) {
+      throw new Error('chainId is undefined, please check your config files and restart');
     }
     return this.chainId;
   }
