@@ -39,7 +39,8 @@ module.exports = {
   endpointsPort: 5000, // Server port
   federatorRetries: 0, // 0 means infinite retries
   checkHttps: false,
-  name: 'federator'
+  name: 'federator',
+  maxFailedTxRetry: 3,
 }
 ```
 

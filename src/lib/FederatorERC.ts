@@ -202,14 +202,13 @@ export default class FederatorERC extends Federator {
         let {
             _to: receiver,
             _from: crossFromAddress,
-            _amount: amount,
+            _amount: amountBN,
             _tokenAddress: tokenAddress,
             _typeId: typeId,
             _originChainId: originChainIdStr,
             _destinationChainId: destinationChainIdStr,
         } = processLogParams.log.returnValues;
         this.logger.trace('log.returnValues', processLogParams.log.returnValues);
-        amount = Number(amount)
 
         const originChainId = Number(originChainIdStr);
         const destinationChainId = Number(destinationChainIdStr);
@@ -233,8 +232,8 @@ export default class FederatorERC extends Federator {
                 tokenAddress: tokenAddress,
             }));
             if (!allowed) {
-                const message = `Original Token not allowed nor side token Tx:${transactionHash} originalTokenAddress:${tokenAddress}
-            Bridge Contract Addr ${originBridge}`;
+                const message = `Original Token not allowed nor side token Tx:${transactionHash} 
+                originalTokenAddress:${tokenAddress} Bridge Contract Addr ${originBridge}`;
                 await insertLogDebug(message);
                 throw new Error(message);
             }
@@ -244,14 +243,14 @@ export default class FederatorERC extends Federator {
             }));
             if (!allowed) {
                 this.logger.error(
-                    `Side token:${sideTokenAddress} needs to be allowed Tx:${transactionHash} originalTokenAddress:${tokenAddress}`,
+                    `Side token:${sideTokenAddress} needs to be allowed Tx:${transactionHash} 
+                    originalTokenAddress:${tokenAddress}`,
                 );
             }
         }
 
         const mediumAmountBN = web3.utils.toBigInt(mediumAmount);
         const largeAmountBN = web3.utils.toBigInt(largeAmount);
-        const amountBN = web3.utils.toBigInt(amount);
 
         if (processLogParams.mediumAndSmall) {
             // At this point we're processing blocks newer than largeAmountConfirmations
@@ -260,7 +259,7 @@ export default class FederatorERC extends Federator {
                 const confirmations = processLogParams.currentBlock - blockNumber;
                 const neededConfirmations = processLogParams.confirmations.largeAmountConfirmations;
                 this.logger.debug(
-                    `[large amount] Tx: ${transactionHash} ${amount} originalTokenAddress:${tokenAddress} won't be proccessed yet ${confirmations} < ${neededConfirmations}`,
+                    `[large amount] Tx: ${transactionHash} ${amountBN.toString()} originalTokenAddress:${tokenAddress} won't be proccessed yet ${confirmations} < ${neededConfirmations}`,
                 );
                 return false;
             }
@@ -272,7 +271,7 @@ export default class FederatorERC extends Federator {
                 const confirmations = processLogParams.currentBlock - blockNumber;
                 const neededConfirmations = processLogParams.confirmations.mediumAmountConfirmations;
                 this.logger.debug(
-                    `[medium amount] Tx: ${transactionHash} ${amount} originalTokenAddress:${tokenAddress} won't be proccessed yet ${confirmations} < ${neededConfirmations}`,
+                    `[medium amount] Tx: ${transactionHash} ${amountBN.toString()} originalTokenAddress:${tokenAddress} won't be proccessed yet ${confirmations} < ${neededConfirmations}`,
                 );
                 return false;
             }
@@ -283,7 +282,7 @@ export default class FederatorERC extends Federator {
                 originalTokenAddress: tokenAddress,
                 sender: crossFromAddress,
                 receiver,
-                amount,
+                amount: amountBN,
                 blockHash,
                 transactionHash,
                 logIndex,
@@ -299,7 +298,7 @@ export default class FederatorERC extends Federator {
             tokenAddress,
             senderAddress: crossFromAddress,
             receiver,
-            amount,
+            amount: amountBN,
             typeId,
             transactionId,
             originChainId,
@@ -312,7 +311,7 @@ export default class FederatorERC extends Federator {
     async processTransaction(processTransactionParams: ProcessTransactionParams) {
         const dataToHash = {
             to: processTransactionParams.receiver,
-            amount: processTransactionParams.amount,
+            amount: processTransactionParams.amount.toString(),
             blockHash: processTransactionParams.log.blockHash,
             transactionHash: processTransactionParams.log.transactionHash,
             logIndex: Number(processTransactionParams.log.logIndex),
