@@ -27,7 +27,6 @@ describe('FederatorERC processLog Amount Conversion Test', () => {
   let mockConfig: ConfigData;
   let mockProcessTransactionParams: any;
   let mockSideFedContract: any;
-  let capturedTransactionIdParams: any;
   let mockTransactionSender: any;
 
   beforeEach(() => {
@@ -68,10 +67,7 @@ describe('FederatorERC processLog Amount Conversion Test', () => {
       transactionWasProcessed: jest.fn().mockResolvedValue(false),
       getVoteTransactionABI: jest.fn().mockResolvedValue('0xmockedABI'),
       getAddress: jest.fn().mockResolvedValue('0xmockedFedAddress'),
-      getTransactionId: jest.fn().mockImplementation(function(params) {
-        capturedTransactionIdParams = params;
-        return Promise.resolve('0xtransactionId123');
-      }),
+      getTransactionId: jest.fn().mockResolvedValue('0xtransactionId123'),
     };
 
     mockTransactionSender = {
@@ -223,7 +219,6 @@ describe('FederatorERC processLog Amount Conversion Test', () => {
 
     for (const amount of testAmounts) {
       mockSideFedContract.getTransactionId.mockClear();
-      capturedTransactionIdParams = null;
       
       const mockLog = {
         blockHash: '0xblockHash123',
@@ -248,11 +243,10 @@ describe('FederatorERC processLog Amount Conversion Test', () => {
       await federatorERC.processLog(testParams);
 
       expect(mockSideFedContract.getTransactionId).toHaveBeenCalled();
-      expect(capturedTransactionIdParams).not.toBeNull();
       
-      const passedAmount = capturedTransactionIdParams.amount;
+      const passedAmount = mockSideFedContract.getTransactionId.mock.calls[0][0].amount;
       const testPassed = amount === passedAmount;
-      
+      ////const testPassed = amount.toString() == passedAmount.toString(); Would ignore type check
       results.details.push({
         originalAmount: amount,
         passedAmount: passedAmount,
