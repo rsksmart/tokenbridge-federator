@@ -10,6 +10,7 @@ const ESTIMATED_GAS = 250000;
 
 import * as chains from './chainId';
 import Web3, {Transaction} from "web3";
+import { API_URLS, CHAIN_IDS } from './constants';
 
 export interface JsonRpcCallResponse {
   jsonrpc: string;
@@ -82,7 +83,7 @@ export class TransactionSender {
     const chainId = await this.getChainId();
     const gasPrice = Number(await this.client.eth.getGasPrice());
     const useGasPrice = gasPrice <= 1 ? 1 : Math.round(gasPrice * 1.5);
-    if (chainId === 1) {
+    if (chainId === CHAIN_IDS.ETHEREUM_MAINNET || chainId === CHAIN_IDS.ETHEREUM_SEPOLIA) {
       const data = {
         module: 'gastracker',
         action: 'gasoracle',
@@ -203,13 +204,13 @@ export class TransactionSender {
 
   async useEtherscanApi(data) {
     const chainId = await this.getChainId();
-    if (chainId !== 1 && chainId !== 42) {
+    if (chainId !== CHAIN_IDS.ETHEREUM_MAINNET && chainId !== CHAIN_IDS.ETHEREUM_SEPOLIA) {
       throw new Error(`ChainId:${chainId} can't use Etherescan API`);
     }
 
-    const url = chainId === 1 ? 'https://api.etherscan.io/api' : 'https://api-kovan.etherscan.io/api';
-
     const params = new URLSearchParams();
+
+    params.append('chainid', CHAIN_IDS.ETHEREUM_MAINNET.toString());
     params.append('apikey', this.etherscanApiKey);
     for (const property in data) {
       params.append(property, data[property]);
@@ -220,11 +221,11 @@ export class TransactionSender {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     };
-    const response = await axios.post(url, params, config);
+    const response = await axios.post(API_URLS.ETHERSCAN_API_URL, params, config);
 
     if (response.data.status === 0) {
       throw new Error(
-        `Etherscan API:${url} data:${JSON.stringify(data)} message:${response.data.message} result:${
+        `Etherscan API:${API_URLS.ETHERSCAN_API_URL} data:${JSON.stringify(data)} message:${response.data.message} result:${
           response.data.result
         }`,
       );
@@ -245,7 +246,7 @@ export class TransactionSender {
         const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
         receipt = await this.client.eth.sendSignedTransaction(serializedTx);
         txHash = receipt.transactionHash;
-        if (chainId === 1) {
+        if (chainId === CHAIN_IDS.ETHEREUM_MAINNET || chainId === CHAIN_IDS.ETHEREUM_SEPOLIA) {
           // send a POST request to Etherscan, we broadcast the same transaction as GETH is not working correclty
           // see  https://github.com/ethereum/go-ethereum/issues/22308
           const dataProxy = {
