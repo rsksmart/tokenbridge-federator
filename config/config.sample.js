@@ -16,5 +16,6 @@ module.exports = {
   federatorRetries: 0, // 0 means infinite retries
   checkHttps: false,
   name: 'federator',
-  maxFailedTxRetry: 3
+  maxFailedTxRetry: 3,
+  enableEtherscanInTestnet: false
 };

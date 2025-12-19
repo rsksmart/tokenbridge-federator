@@ -24,6 +24,7 @@ export class TransactionSender {
   chainId: any;
   manuallyCheck: any;
   etherscanApiKey: any;
+  enableEtherscanInTestnet: boolean;
   debuggingMode: any;
   config: any;
 
@@ -34,6 +35,7 @@ export class TransactionSender {
     this.chainId = chainId;
     this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
     this.etherscanApiKey = config.etherscanApiKey;
+    this.enableEtherscanInTestnet = config.enableEtherscanInTestnet ?? false;
     this.debuggingMode = false;
   }
 
@@ -83,7 +85,8 @@ export class TransactionSender {
     const chainId = await this.getChainId();
     const gasPrice = Number(await this.client.eth.getGasPrice());
     const useGasPrice = gasPrice <= 1 ? 1 : Math.round(gasPrice * 1.5);
-    if (chainId === CHAIN_IDS.ETHEREUM_MAINNET || chainId === CHAIN_IDS.ETHEREUM_SEPOLIA) {
+    if (chainId === CHAIN_IDS.ETHEREUM_MAINNET || (chainId === CHAIN_IDS.ETHEREUM_SEPOLIA && this.enableEtherscanInTestnet)) {
+      this.logger.trace('Using Etherscan API for gas price');
       const data = {
         module: 'gastracker',
         action: 'gasoracle',
